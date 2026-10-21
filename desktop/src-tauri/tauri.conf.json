@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Carta",
+  "version": "1.0.2",
+  "identifier": "io.carta.reader",
+  "build": {
+    "frontendDist": "../../outputs/carta"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Carta · 1.0.2",
+        "width": 1440,
+        "height": 960,
+        "minWidth": 900,
+        "minHeight": 640,
+        "backgroundColor": "#f7f6f2"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' asset: tauri:; script-src 'self' 'unsafe-inline' asset: tauri:; style-src 'self' 'unsafe-inline' asset: tauri:; img-src 'self' asset: tauri: data: blob:; font-src 'self' asset: tauri: data:; connect-src 'self' ipc: http://ipc.localhost blob:; frame-src 'self' blob: data:; object-src 'none'; base-uri 'self'; form-action 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    }
+  }
+}

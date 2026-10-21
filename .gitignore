@@ -1,0 +1,8 @@
+node_modules/
+.tauri-build/
+desktop/src-tauri/target/
+.pnpm-store/
+.local-appdata/
+.appdata/
+.tmp/
+out/

@@ -1,0 +1,15 @@
+{
+  "name": "carta-reader",
+  "productName": "Carta",
+  "version": "1.0.2",
+  "description": "Un lettore EPUB desktop con note ed evidenziazioni",
+  "author": "Carta",
+  "scripts": {
+    "start": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.2"
+  },
+  "packageManager": "pnpm@9.15.5"
+}

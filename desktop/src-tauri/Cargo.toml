@@ -1,0 +1,22 @@
+[package]
+name = "carta-reader"
+version = "1.0.2"
+description = "Un lettore EPUB desktop con note ed evidenziazioni"
+authors = ["Carta"]
+edition = "2021"
+
+[package.metadata.tauri-winres]
+FileDescription = "Lettore EPUB Carta"
+ProductName = "Carta"
+OriginalFilename = "Carta.exe"
+LegalCopyright = "Copyright Carta"
+
+[lib]
+name = "carta_reader_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
