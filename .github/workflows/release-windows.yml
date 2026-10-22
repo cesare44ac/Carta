@@ -31,6 +31,18 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Check native build tools
+        shell: pwsh
+        run: |
+          if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
+            throw "CMake is required to compile llama.cpp."
+          }
+          $libclang = Get-ChildItem -Path "$env:ProgramFiles\LLVM" -Filter libclang.dll -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $libclang) {
+            throw "LLVM libclang.dll is required by bindgen."
+          }
+          "LIBCLANG_PATH=$($libclang.DirectoryName)" >> $env:GITHUB_ENV
+
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:

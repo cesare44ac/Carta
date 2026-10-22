@@ -1,6 +1,6 @@
 [package]
 name = "carta-reader"
-version = "1.0.2"
+version = "1.0.10"
 description = "Un lettore EPUB desktop con note ed evidenziazioni"
 authors = ["Carta"]
 edition = "2021"
@@ -19,4 +19,11 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
 tauri = { version = "2", features = [] }
+llama-cpp-2 = { version = "0.1.157", features = ["sampler"] }
+reqwest = { version = "0.13.5", features = ["stream"] }
+sha2 = "0.10.9"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62.2", features = ["Foundation", "Foundation_Collections", "Media_Control"] }
