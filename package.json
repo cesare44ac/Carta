@@ -1,7 +1,7 @@
 {
   "name": "carta-reader",
   "productName": "Carta",
-  "version": "1.0.10",
+  "version": "1.0.12",
   "description": "Un lettore EPUB desktop con note ed evidenziazioni",
   "author": "Carta",
   "scripts": {

@@ -14,15 +14,15 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 9.15.5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -55,7 +55,7 @@ jobs:
         run: pnpm build
 
       - name: Publish installer to GitHub Releases
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: Carta ${{ github.ref_name }}
           generate_release_notes: true

@@ -318,7 +318,7 @@ dependencies = [
 
 [[package]]
 name = "carta-reader"
-version = "1.0.10"
+version = "1.0.12"
 dependencies = [
  "llama-cpp-2",
  "reqwest",

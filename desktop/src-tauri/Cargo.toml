@@ -1,6 +1,6 @@
 [package]
 name = "carta-reader"
-version = "1.0.10"
+version = "1.0.12"
 description = "Un lettore EPUB desktop con note ed evidenziazioni"
 authors = ["Carta"]
 edition = "2021"

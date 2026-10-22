@@ -21,8 +21,10 @@
       $ai('assistantSetup').classList.toggle('hidden', modelReady);
       $ai('assistantWorkspace').classList.toggle('hidden', !modelReady);
       $ai('assistantStatus').textContent = modelReady ? 'Qwen è pronto su questo dispositivo.' : 'Un aiuto privato per capire il testo.';
-    } catch {
-      $ai('assistantStatus').textContent = 'Assistente disponibile nella versione desktop di Carta.';
+    } catch (error) {
+      const detail = String(error?.message || error || 'errore sconosciuto');
+      $ai('assistantStatus').textContent = `Assistente non disponibile: ${detail}`;
+      console.error('Impossibile verificare Qwen:', error);
     }
   }
 
