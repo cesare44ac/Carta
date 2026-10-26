@@ -225,9 +225,9 @@ window.applyEpubThemeToDocument = function (frameDoc) {
   const colors = {
     light: ['#292a26', '#fffefa'],
     sepia: ['#453827', '#f7edda'],
-    dark: ['#c4c8bf', '#272a27']
+    dark: ['#c9c9c7', '#17181a']
   }[theme];
-  const linkColor = { light: '#315d4b', sepia: '#69502f', dark: '#a8cbbb' }[theme];
+  const linkColor = { light: '#315d4b', sepia: '#69502f', dark: '#b9b4cc' }[theme];
   const systemFont = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif';
   for (const element of [root, body, ...body.querySelectorAll('*')]) {
     element.style.setProperty('color', colors[0], 'important');
@@ -236,8 +236,11 @@ window.applyEpubThemeToDocument = function (frameDoc) {
   }
   root.style.setProperty('font-size', `${fontSize}px`, 'important');
   body.style.setProperty('font-size', `${fontSize}px`, 'important');
-  root.style.setProperty('background-color', colors[1], 'important');
-  body.style.setProperty('background-color', colors[1], 'important');
+  const pageBackground = theme === 'dark' ? 'transparent' : colors[1];
+  root.style.setProperty('background-color', pageBackground, 'important');
+  body.style.setProperty('background-color', pageBackground, 'important');
+  root.style.setProperty('background-image', 'none', 'important');
+  body.style.setProperty('background-image', 'none', 'important');
   for (const link of body.querySelectorAll('a')) {
     link.style.setProperty('color', linkColor, 'important');
     link.style.setProperty('text-decoration', 'underline', 'important');
@@ -258,16 +261,15 @@ function addEPUBScrollbarStyle(view) {
   if (!frameDoc?.head || frameDoc.getElementById('carta-reader-scrollbar-style')) return;
   const style = frameDoc.createElement('style');
   style.id = 'carta-reader-scrollbar-style';
-  style.textContent = `
-    * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 22%, transparent) transparent; }
-    ::selection, ::-moz-selection { background: #dce4d2 !important; color: #30332e !important; }
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, currentColor 22%, transparent); border-radius: 999px; }
-  `;
+  style.textContent = [
+    '* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 22%, transparent) transparent; }',
+    '::selection, ::-moz-selection { background: #dce4d2 !important; color: #30332e !important; }',
+    '::-webkit-scrollbar { width: 5px; height: 5px; }',
+    '::-webkit-scrollbar-track { background: transparent; }',
+    '::-webkit-scrollbar-thumb { background: color-mix(in srgb, currentColor 22%, transparent); border-radius: 999px; }'
+  ].join(String.fromCharCode(10));
   frameDoc.head.append(style);
 }
-
 const originalOpenEPUB = window.openEPUB;
 window.openEPUB = async function (file) {
   await originalOpenEPUB(file);
@@ -299,7 +301,7 @@ scrubber.addEventListener('input', () => {
   jumpInput.value = String(percentage);
 });
 scrubber.addEventListener('change', () => window.seekToProgress(scrubber.value));
-$('.reader-progress').append(scrubber);
+$('#readerProgressControl').append(scrubber);
 
 const jumpControl = document.createElement('label');
 jumpControl.className = 'reader-jump';
@@ -350,6 +352,25 @@ window.setEpubSeekReady = function (ready) {
   jumpInput.disabled = !ready;
   scrubber.title = ready ? 'Trascina per scegliere la posizione nel libro' : 'Sto preparando le posizioni del libro';
   jumpInput.title = ready ? 'Inserisci una percentuale da 0 a 100' : 'Sto preparando le posizioni del libro';
+};
+
+const originalUpdateStats = window.updateStats;
+window.updateStats = function () {
+  originalUpdateStats?.();
+  const progress = $('progressLabel');
+  const fullProgress = `${Math.round(Math.max(0, Math.min(1, current?.progress || 0)) * 100)}% completato`;
+  progress.textContent = fullProgress.replace(' completato', '');
+  progress.title = fullProgress;
+  const remaining = $('remainingLabel');
+  const fullRemaining = remaining.textContent;
+  remaining.textContent = fullRemaining
+    .replace(' rimanenti', '')
+    .replace(/\s*min\b/g, 'm')
+    .replace(/\s*h\s*/g, 'h ');
+  remaining.title = fullRemaining;
+  const pace = $('paceLabel');
+  pace.textContent = pace.textContent.replace(' parole/min', ' ppm').replace('Ritmo iniziale', 'Stima');
+  $('.reader-status').title = `${fullProgress} · ${fullRemaining} · ${pace.textContent}`;
 };
 
 window.seekToProgress = async function (value) {

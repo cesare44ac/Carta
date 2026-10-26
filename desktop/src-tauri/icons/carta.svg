@@ -1,6 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <rect x="40" y="40" width="944" height="944" rx="230" fill="#eee9df"/>
-  <path d="M512 400c-92-67-211-91-333-64v346c121-27 240-4 333 63 93-67 212-90 333-63V336c-122-27-241-3-333 64Z" fill="#fffdf8" stroke="#334b43" stroke-width="34" stroke-linejoin="round"/>
-  <path d="M512 400v345M243 425c88-12 170 7 235 43M243 521c88-12 170 7 235 43M781 425c-88-12-170 7-235 43M781 521c-88-12-170 7-235 43" fill="none" stroke="#334b43" stroke-width="27" stroke-linecap="round"/>
-  <path d="M512 400v345" fill="none" stroke="#d88963" stroke-width="20" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c9b7eb"/>
+      <stop offset="1" stop-color="#8e79bd"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="40" width="944" height="944" rx="230" fill="url(#bg)"/>
+  <path d="M512 400c-92-67-211-91-333-64v346c121-27 240-4 333 63 93-67 212-90 333-63V336c-122-27-241-3-333 64Z" fill="#faf8ff" stroke="#39334a" stroke-width="34" stroke-linejoin="round"/>
+  <path d="M512 400v345M243 425c88-12 170 7 235 43M243 521c88-12 170 7 235 43M781 425c-88-12-170 7-235 43M781 521c-88-12-170 7-235 43" fill="none" stroke="#625776" stroke-width="27" stroke-linecap="round"/>
+  <path d="M512 400v345" fill="none" stroke="#b59adf" stroke-width="20" stroke-linecap="round"/>
 </svg>

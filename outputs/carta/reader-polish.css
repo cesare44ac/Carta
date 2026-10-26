@@ -24,11 +24,57 @@ textarea {
 .citation-return { font-family: var(--system-font); }
 
 body[data-theme="dark"] {
-  --ink: #cdd0c8;
-  --reader-ink: #c4c8bf;
+  --ink: #d4d4d2;
+  --muted: #999a9e;
+  --accent: #aaa6ba;
+  --reader-ink: #c9c9c7;
 }
 
-body[data-theme="dark"] .note-text { color: #b9beb5; }
+body[data-theme="dark"] {
+  background-color: #101112;
+  background-image:
+    radial-gradient(ellipse 44vw 92vh at 0% 52%, rgb(168 145 214 / 19%), transparent 78%),
+    radial-gradient(ellipse 44vw 92vh at 100% 48%, rgb(192 165 230 / 14%), transparent 78%);
+  background-attachment: fixed;
+}
+
+body[data-theme="dark"] .topbar { background: transparent; }
+body[data-theme="dark"] .reader-top { background: transparent; }
+body[data-theme="dark"] .note-text { color: #c0c0be; }
+
+.reader-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.reader-status #progressLabel { color: var(--ink); font-weight: 600; }
+.reader-status #remainingLabel { max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
+.reader-status #paceLabel { max-width: 56px; overflow: hidden; text-overflow: ellipsis; }
+.reader-status .status-sep { color: var(--line); }
+.reader-progress#readerProgressControl { width: 92px; height: 14px; flex: 0 0 92px; background: transparent; }
+#readerProgressControl::before { top: 6px; }
+#readerProgressControl #progressScrubber { top: 0; }
+#progressBar[hidden] { display: none !important; }
+#readerView .reader-top { gap: 12px; }
+
+@media (max-width: 1050px) {
+  .reader-status { gap: 4px; font-size: 9px; }
+  .reader-status #remainingLabel { max-width: 64px; }
+  .reader-status #paceLabel,
+  .reader-status .status-sep:nth-of-type(4) { display: none; }
+  .reader-progress#readerProgressControl { width: 68px; flex-basis: 68px; }
+}
+
+@media (max-width: 760px) {
+  .reader-status #remainingLabel { display: none; }
+  .reader-status .status-sep { display: none; }
+  .reader-progress#readerProgressControl { width: 54px; flex-basis: 54px; }
+}
 
 /* Scrollbars stay available, but no longer compete with the page. */
 * {
@@ -255,3 +301,388 @@ body[data-theme="dark"] .note-text { color: #b9beb5; }
 .assistant-intro{display:flex;align-items:center;gap:12px;margin:3px 0 14px}.assistant-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:var(--accent2);color:var(--accent);font-size:20px}.assistant-intro strong{font-size:14px}.assistant-intro p{margin:3px 0 0;font-size:11px;color:var(--muted)}.assistant-description,.assistant-privacy{font-size:12px;line-height:1.6;color:var(--muted)}.assistant-download,.assistant-ask{width:100%;margin:8px 0}.assistant-progress{height:4px;margin:12px 0 18px;border-radius:9px;background:var(--line);overflow:hidden}.assistant-progress span{display:block;width:0;height:100%;background:var(--accent);transition:width .25s}.assistant-privacy{padding:13px 0;border-top:1px solid var(--line);margin-top:18px;font-size:10px}.assistant-prompts{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:4px 0 17px}.assistant-prompts button{padding:9px 7px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-size:11px}.assistant-prompts button:hover{background:var(--accent2);color:var(--ink)}.assistant-label{display:block;margin:12px 0 7px;color:var(--muted);font-size:11px}.assistant-input{width:100%;min-height:110px;resize:vertical;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:12px/1.6 inherit;outline:none}.assistant-input:focus{border-color:var(--accent)}.assistant-answer{white-space:pre-wrap;padding:14px;margin:12px 0 9px;border:1px solid var(--line);border-radius:11px;background:var(--bg);color:var(--ink);font-size:12px;line-height:1.7}.assistant-selection-action{border:0;border-radius:7px;padding:7px 9px;background:var(--accent2);color:var(--accent);font-size:11px}
 .assistant-answer{white-space:normal;padding:15px;font-size:13px;line-height:1.75}.assistant-answer p{margin:0 0 10px}.assistant-answer p:last-child{margin-bottom:0}.assistant-answer h3{margin:14px 0 6px;font-size:13px;font-weight:650;letter-spacing:-.1px}.assistant-answer ul,.assistant-answer ol{padding-left:20px;margin:6px 0 12px}.assistant-answer li{padding-left:2px;margin:4px 0}.assistant-answer strong{font-weight:650}.assistant-answer code{font:11px ui-monospace,monospace;padding:1px 4px;border-radius:4px;background:var(--paper)}.assistant-math{font-family:Georgia,serif;font-style:italic}.assistant-math .katex{font-style:normal}.assistant-equation{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:4px 2px 10px;margin:6px 0 12px;overscroll-behavior-inline:contain}.assistant-equation .katex{font-size:.72em}.assistant-equation .katex-display{margin:0}
 .assistant-chat-head{display:flex;align-items:center;justify-content:space-between;margin:4px 0 7px}.assistant-chat-head .assistant-label{margin:0}.assistant-new-chat{border:0;background:transparent;color:var(--muted);font-size:11px;padding:5px 7px;border-radius:7px}.assistant-new-chat:hover{background:var(--accent2);color:var(--ink)}.assistant-chat{max-height:34vh;min-height:100px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:10px;margin:0 0 12px;border:1px solid var(--line);border-radius:11px;background:var(--bg);overscroll-behavior:contain}.assistant-chat-empty{align-self:center;max-width:260px;margin:auto;color:var(--muted);font-size:11px;line-height:1.6;text-align:center}.assistant-message{max-width:100%;min-width:0}.assistant-message-user{align-self:flex-end;max-width:91%;padding:8px 11px;border-radius:12px 12px 3px 12px;background:var(--accent2);color:var(--ink)}.assistant-message-assistant{align-self:stretch;padding:2px 3px}.assistant-message-author{display:block;margin:0 0 4px;color:var(--muted);font-size:9px;font-weight:600;letter-spacing:.2px}.assistant-message-user .assistant-message-author{text-align:right}.assistant-message-body{font-size:12px;line-height:1.65;overflow-wrap:anywhere}.assistant-message-body p{margin:0 0 8px}.assistant-message-body p:last-child{margin-bottom:0}.assistant-message-body h3{margin:10px 0 5px;font-size:12px;font-weight:650}.assistant-message-body ul,.assistant-message-body ol{padding-left:18px;margin:5px 0 9px}.assistant-message-body li{margin:3px 0}.assistant-message-body .assistant-equation{max-width:100%;overflow-x:auto;overflow-y:hidden}.assistant-input{min-height:76px;max-height:160px}
+
+.assistant-dock-toggle{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:8px;padding:6px 9px;font-size:10px;white-space:nowrap}.assistant-dock-toggle:hover,.assistant-dock-toggle[aria-pressed="true"]{background:var(--accent2);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}.assistant-tools-help{margin:-8px 0 14px;color:var(--muted);font-size:10px;line-height:1.55}.side-panel.ai-docked{position:fixed;z-index:40;inset:0 0 0 auto;width:min(390px,38vw);height:100dvh;min-height:0;border:0;border-left:1px solid var(--line);box-shadow:-10px 0 32px #00000012;transform:none;display:flex}.side-panel.ai-docked .panel-head{flex:0 0 56px}.side-panel.ai-docked .panel-head>*:not(#assistantTab):not(.top-spacer):not(#aiDockToggle){display:none}.side-panel.ai-docked .panel-head #assistantTab{display:none}.side-panel.ai-docked .panel-head .top-spacer{display:block}.side-panel.ai-docked #assistantPane{display:flex!important;flex-direction:column;min-height:0} .side-panel.ai-docked #assistantWorkspace{display:flex;flex:1;flex-direction:column;min-height:0}.side-panel.ai-docked #assistantPane .assistant-chat{max-height:none;min-height:120px;flex:1}.side-panel.ai-docked #assistantWorkspace{min-height:0}.side-panel.ai-docked .assistant-privacy{margin-top:auto}body.ai-dock-open{padding-right:min(390px,38vw)}body.ai-dock-open #readerView{width:100%}body.ai-dock-open .reader-top{min-width:0}.side-panel.ai-docked #assistantInput{max-height:22vh}
+@media(max-width:850px){body.ai-dock-open{padding-right:0}.side-panel.ai-docked{width:min(390px,92vw);box-shadow:-16px 0 36px #0002}}
+
+.ai-panel{position:fixed;z-index:50;inset:0 0 0 auto;width:min(430px,92vw);height:100dvh;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);border-left:1px solid var(--line);box-shadow:-16px 0 42px #0002;transform:translateX(105%);transition:transform .24s ease;visibility:hidden}.ai-panel.open{transform:translateX(0);visibility:visible}.ai-panel.pinned{width:min(390px,38vw);transform:none;visibility:visible}.ai-panel-head{height:58px;flex:0 0 58px;display:flex;align-items:center;gap:9px;padding:0 14px;border-bottom:1px solid var(--line)}.ai-panel-head strong{font-size:13px;font-weight:650}.ai-panel-close{width:30px;height:30px}.ai-panel-body{display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden;padding:16px}.ai-panel-body #assistantWorkspace{display:flex;flex:1;flex-direction:column;min-height:0;overflow:auto}.ai-panel-body .assistant-chat{flex:1;max-height:none;min-height:140px}.assistant-web-toggle{display:flex;align-items:center;gap:10px;padding:10px 11px;margin:0 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:pointer}.assistant-web-toggle input{width:16px;height:16px;margin:0;accent-color:var(--accent)}.assistant-web-toggle span{display:flex;flex-direction:column;gap:3px}.assistant-web-toggle strong{font-size:11px;font-weight:600}.assistant-web-toggle small{font-size:10px;color:var(--muted);line-height:1.4}.assistant-sources{display:flex;flex-direction:column;gap:6px;padding-top:9px;border-top:1px solid var(--line);margin-top:10px}.assistant-sources-title{font-size:10px;color:var(--muted);font-weight:600}.assistant-source{display:grid;gap:3px;padding:8px 9px;border-radius:8px;background:var(--bg);font-size:10px;line-height:1.4}.assistant-source strong{font-size:10px}.assistant-source span{color:var(--muted);max-height:42px;overflow:hidden}.assistant-source-link{justify-self:start;padding:0;border:0;background:none;color:var(--accent);font-size:10px}.assistant-source-link:hover{text-decoration:underline}body.ai-dock-open{padding-right:min(390px,38vw)}body.ai-dock-open #readerView{width:100%}#readerView:fullscreen .ai-panel{position:fixed;z-index:50}body.ai-dock-open #readerView:fullscreen .reader-layout{width:calc(100vw - min(390px,38vw))}
+@media(max-width:850px){.ai-panel.pinned{width:min(390px,44vw)}body.ai-dock-open{padding-right:0}body.ai-dock-open #readerView:fullscreen .reader-layout{width:56vw}}
+
+/* Current public preview: keep only dark mode selectable while preserving the dormant themes. */
+body:not([data-theme="dark"]) { color-scheme: dark; }
+#libraryView .topbar button[aria-label="Aspetto"] { display: none; }
+#themeSettings { display: none; }
+
+/* The assistant drawer starts below the app's top navigation, so it never covers controls. */
+.ai-panel {
+  top: 64px;
+  height: calc(100dvh - 64px);
+  background: color-mix(in srgb, var(--paper) 96%, #25222d 4%);
+  border-left-color: color-mix(in srgb, var(--line) 78%, var(--accent) 22%);
+  box-shadow: -18px 0 52px #0003;
+  backdrop-filter: blur(18px) saturate(112%);
+}
+body:not(.reading) .ai-panel { top: 72px; height: calc(100dvh - 72px); }
+.ai-panel.pinned { width: min(390px, 36vw); }
+.ai-panel-head { height: 54px; flex-basis: 54px; padding-inline: 18px; }
+.ai-panel-head strong { letter-spacing: -.2px; }
+.ai-panel-head #assistantStatus {
+  max-width: 145px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ai-panel-body { padding: 14px 16px 12px; }
+.ai-panel-body .assistant-intro { display: none; }
+.ai-panel-body .assistant-web-toggle { border-radius: 12px; background: color-mix(in srgb, var(--bg) 76%, var(--paper)); }
+.ai-panel-body .assistant-prompts { gap: 7px; margin: 2px 0 12px; }
+.ai-panel-body .assistant-prompts button { border-radius: 10px; background: color-mix(in srgb, var(--paper) 60%, transparent); }
+.ai-panel-body .assistant-input { border-radius: 12px; background: color-mix(in srgb, var(--bg) 72%, var(--paper)); }
+.ai-panel-body .assistant-chat { border-radius: 13px; background: color-mix(in srgb, var(--bg) 70%, var(--paper)); }
+.ai-panel-body .assistant-privacy { padding-top: 10px; }
+body.ai-dock-open { padding-right: 0 !important; }
+@media(max-width:850px) {
+  .ai-panel.pinned { width: min(390px, 92vw); }
+  .ai-panel-head #assistantStatus { display: none; }
+}
+
+/* Compact AI chat: conversation takes the available height and the composer stays at the bottom. */
+:root { --assistant-dock-width: min(390px, 34vw); }
+.ai-panel.pinned { width: var(--assistant-dock-width); }
+body.ai-dock-open #readerView { width: 100%; max-width: 100%; }
+body.ai-dock-open #libraryView { width: calc(100vw - var(--assistant-dock-width)); max-width: calc(100vw - var(--assistant-dock-width)); }
+body.ai-dock-open #readerView .reader-top,
+body.ai-dock-open #readerView .reader-layout {
+  box-sizing: border-box;
+  width: calc(100vw - var(--assistant-dock-width));
+  max-width: calc(100vw - var(--assistant-dock-width));
+}
+body.ai-dock-open #readerView .reader-layout { grid-template-columns: minmax(0, 1fr); }
+body.ai-dock-open #readerView .reader-top { min-width: 0; overflow: hidden; padding-inline: 14px; gap: 8px; }
+body.ai-dock-open #readerView:fullscreen { position: fixed; inset: 0; width: 100vw; max-width: 100vw; height: 100dvh; }
+body.ai-dock-open #readerView:fullscreen .reader-top,
+body.ai-dock-open #readerView:fullscreen .reader-layout { width: calc(100vw - var(--assistant-dock-width)); max-width: calc(100vw - var(--assistant-dock-width)); }
+body.ai-dock-open #readerView:fullscreen .reader-layout { grid-template-columns: minmax(0, 1fr); }
+.ai-panel-head { gap: 8px; }
+.ai-panel-brand { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.ai-panel-brand strong { font-size: 14px; letter-spacing: -.25px; }
+.ai-panel-head #assistantStatus { max-width: 180px; font-size: 10px; }
+.ai-tool-button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 17px;
+}
+.ai-tool-button:hover { background: var(--accent2); color: var(--ink); }
+.ai-panel-body { padding: 0 18px 14px; }
+.ai-panel-body #assistantWorkspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  gap: 10px;
+  overflow: hidden;
+}
+.ai-panel-body .assistant-chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 15px 2px;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.ai-panel-body .assistant-chat-empty { max-width: 250px; font-size: 12px; }
+.ai-panel-body .assistant-message-user {
+  padding: 10px 13px;
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, var(--line));
+  border-radius: 14px 14px 4px 14px;
+}
+.ai-panel-body .assistant-message-assistant { padding: 4px 2px; }
+.ai-panel-body .assistant-message-body { font-size: 13px; line-height: 1.7; }
+.assistant-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--paper) 84%, var(--bg));
+  box-shadow: 0 5px 18px #0002;
+}
+.ai-panel-body .assistant-input {
+  min-height: 42px;
+  max-height: 160px;
+  padding: 10px 8px;
+  resize: vertical;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+}
+.ai-panel-body .assistant-input:focus { border: 0; }
+.assistant-send {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  border-radius: 11px;
+  font-size: 0;
+}
+.assistant-send::before { content: "↑"; font-size: 19px; line-height: 1; }
+.assistant-send:disabled::before { content: "…"; font-size: 15px; }
+.assistant-composer-meta {
+  display: flex;
+  min-height: 15px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 3px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.assistant-composer-meta .text-action { color: var(--accent); font-size: 10px; }
+.assistant-help-dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 24px 80px #0008;
+}
+.assistant-help-dialog::backdrop { background: #08080bb8; backdrop-filter: blur(5px); }
+.assistant-help-dialog > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 17px;
+  border-bottom: 1px solid var(--line);
+}
+.assistant-help-dialog > header > div { display: flex; align-items: center; gap: 10px; }
+.assistant-help-dialog strong { font-size: 13px; }
+.assistant-help-mark { color: var(--accent); }
+.assistant-help-content { padding: 7px 18px 15px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.assistant-help-content strong { color: var(--ink); }
+.assistant-help-content p { margin: 10px 0; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@media(max-width: 1150px) {
+  body.ai-dock-open #readerView .reader-layout { grid-template-columns: minmax(0, 1fr); }
+  body.ai-dock-open #readerView .spotify-widget,
+  body.ai-dock-open #readerView .reader-status { display: none; }
+  body.ai-dock-open #readerView .reader-progress#readerProgressControl { width: 58px; flex-basis: 58px; }
+}
+@media(max-width: 850px) {
+  :root { --assistant-dock-width: min(390px, 42vw); }
+  body.ai-dock-open #readerView .reader-layout { grid-template-columns: minmax(0, 1fr); }
+  body.ai-dock-open #readerView .side-panel { display: none; }
+  body.ai-dock-open #readerView .book-name { max-width: 100px; }
+}
+
+/* Keep the lilac glow on the viewport edges, outside the EPUB pages themselves. */
+body[data-theme="dark"] #readerView {
+  background-color: #101112;
+  background-image:
+    radial-gradient(ellipse 42vw 92vh at 0% 52%, rgb(168 145 214 / 16%), transparent 76%),
+    radial-gradient(ellipse 42vw 92vh at 100% 48%, rgb(192 165 230 / 12%), transparent 76%);
+  background-repeat: no-repeat;
+}
+body[data-theme="dark"] #readerView .reader-layout,
+body[data-theme="dark"] #readerView .reading-stage,
+body[data-theme="dark"] #readerView .stage-scroll { background-color: transparent; }
+
+
+/* Apply the edge tint to the full page canvas, not individual EPUB documents. */
+body[data-theme="dark"] #paperWrap {
+  background-color: #17181a;
+  background-image:
+    radial-gradient(ellipse 44vw 92vh at 0% 52%, rgb(168 145 214 / 17%), transparent 74%),
+    radial-gradient(ellipse 44vw 92vh at 100% 48%, rgb(192 165 230 / 13%), transparent 74%);
+}
+
+/* Keep the lilac edge wash visible behind the library and reading viewport. */
+body[data-theme="dark"] #libraryView,
+body[data-theme="dark"] #readerView,
+body[data-theme="dark"] #readerView .reader-layout,
+body[data-theme="dark"] #readerView .reading-stage,
+body[data-theme="dark"] #readerView .stage-scroll {
+  background-color: transparent;
+}
+body[data-theme="dark"] #libraryView {
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 38vw 85vh at 0% 48%, rgb(171 143 229 / 24%), transparent 72%),
+    radial-gradient(ellipse 38vw 85vh at 100% 58%, rgb(196 166 236 / 20%), transparent 72%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+body[data-theme="dark"].reading #readerView .reading-stage {
+  background-image:
+    radial-gradient(ellipse 34vw 92vh at 0% 52%, rgb(171 143 229 / 22%), transparent 74%),
+    radial-gradient(ellipse 34vw 92vh at 100% 48%, rgb(196 166 236 / 18%), transparent 74%);
+  background-repeat: no-repeat;
+}
+
+.cover { isolation: isolate; }
+.cover-art {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cover:has(.cover-art) .cover-title {
+  align-self: end;
+  width: calc(100% + 52px);
+  margin: 0 -26px -26px;
+  padding: 34px 16px 14px;
+  color: #fff;
+  background: linear-gradient(transparent, rgb(0 0 0 / 70%));
+  text-shadow: 0 1px 8px rgb(0 0 0 / 35%);
+}
+.cover:has(.cover-art) .format { z-index: 1; color: #232323; }
+
+/* The EPUB viewport is an iframe: keep its document canvas transparent so the edge wash below it shows through. */
+body[data-theme="dark"] #paperWrap,
+body[data-theme="dark"] #epubContent {
+  background-color: transparent;
+}
+
+/* A docked assistant owns the entire right rail, including the otherwise empty top-bar strip. */
+.ai-panel.pinned {
+  top: 0 !important;
+  height: 100dvh !important;
+}
+body:not(.reading) .ai-panel.pinned {
+  top: 0 !important;
+  height: 100dvh !important;
+}
+#readerView:fullscreen .ai-panel.pinned {
+  top: 0 !important;
+  height: 100dvh !important;
+}
+
+.language-picker {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--paper) 76%, transparent);
+}
+.language-picker select {
+  min-width: 42px;
+  padding: 4px 2px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 600 10px var(--system-font);
+  cursor: pointer;
+}
+#libraryView .brandmark {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 11px;
+  background: linear-gradient(145deg, #aaa6ba, #817b99);
+  box-shadow: 0 5px 14px rgb(126 117 160 / 24%), inset 0 1px rgb(255 255 255 / 28%);
+}
+#libraryView .brandmark svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Keep EPUB pagination in sync with the real space left beside a pinned AI panel. */
+:root { --assistant-dock-width: min(390px, 34vw); }
+.ai-panel.pinned {
+  width: var(--assistant-dock-width) !important;
+  max-width: var(--assistant-dock-width);
+}
+body.ai-dock-open #readerView:not(:fullscreen) {
+  width: calc(100vw - var(--assistant-dock-width));
+  max-width: calc(100vw - var(--assistant-dock-width));
+  min-width: 0;
+}
+body.ai-dock-open #readerView:not(:fullscreen) > .reader-top,
+body.ai-dock-open #readerView:not(:fullscreen) > .reader-layout {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+body.ai-dock-open #readerView:fullscreen {
+  width: 100vw;
+  max-width: 100vw;
+}
+body.ai-dock-open #readerView:fullscreen > .reader-top,
+body.ai-dock-open #readerView:fullscreen > .reader-layout {
+  box-sizing: border-box;
+  width: calc(100vw - var(--assistant-dock-width));
+  max-width: calc(100vw - var(--assistant-dock-width));
+  min-width: 0;
+}
+body.ai-dock-open #readerView .reader-layout,
+body.ai-dock-open #readerView .reading-stage,
+body.ai-dock-open #readerView #stageScroll,
+body.ai-dock-open #readerView #paperWrap,
+body.ai-dock-open #readerView #epubContent {
+  min-width: 0;
+}
+@media (max-width: 850px) {
+  :root { --assistant-dock-width: min(390px, 42vw); }
+}
+
+/* Let the lilac canvas show through the dock, and make EPUB artwork obey its page. */
+.ai-panel {
+  background: rgb(23 24 28 / 58%);
+  border-left-color: rgb(196 181 224 / 18%);
+  box-shadow: -18px 0 52px rgb(0 0 0 / 16%);
+  -webkit-backdrop-filter: blur(24px) saturate(128%);
+  backdrop-filter: blur(24px) saturate(128%);
+}
+.ai-panel-head {
+  background: rgb(23 24 28 / 28%);
+  border-bottom-color: rgb(196 181 224 / 12%);
+}
+.ai-panel-body,
+.ai-panel-body #assistantWorkspace { background: transparent; }
+.assistant-composer {
+  background: rgb(30 31 36 / 62%);
+  border-color: rgb(196 181 224 / 18%);
+  box-shadow: 0 5px 18px rgb(0 0 0 / 12%);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.ai-panel-body .assistant-input { background: transparent; }
+body[data-theme="dark"] #readerView:fullscreen {
+  background-color: #101112;
+  background-image:
+    radial-gradient(ellipse 42vw 92vh at 0% 52%, rgb(168 145 214 / 19%), transparent 78%),
+    radial-gradient(ellipse 42vw 92vh at 100% 48%, rgb(192 165 230 / 14%), transparent 78%);
+  background-repeat: no-repeat;
+}
+
+/* Clip the pagination viewport; preserve publisher styles inside each page. */
+#epubContent { position: relative; overflow: hidden; isolation: isolate; }

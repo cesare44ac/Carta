@@ -222,6 +222,212 @@ fn spotify_media_control(action: String) -> Result<(), String> {
     }
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WebSearchResult {
+    title: String,
+    url: String,
+    snippet: String,
+    source: String,
+    price: Option<String>,
+}
+
+fn shorten_text(value: &str, max_chars: usize) -> String {
+    value
+        .chars()
+        .take(max_chars)
+        .collect::<String>()
+        .trim()
+        .to_string()
+}
+
+#[tauri::command]
+async fn search_web(query: String) -> Result<Vec<WebSearchResult>, String> {
+    let query = query.trim();
+    if query.is_empty() {
+        return Err("Inserisci una ricerca".into());
+    }
+    let query = shorten_text(query, 240);
+    let client = reqwest::Client::builder()
+        .user_agent("Carta Reader/2.1.9 (book research)")
+        .timeout(std::time::Duration::from_secs(12))
+        .build()
+        .map_err(|error| format!("Avvio della ricerca non riuscito: {error}"))?;
+    let mut results = Vec::new();
+
+    let mut books_url = reqwest::Url::parse("https://www.googleapis.com/books/v1/volumes")
+        .map_err(|error| error.to_string())?;
+    books_url
+        .query_pairs_mut()
+        .append_pair("q", &query)
+        .append_pair("maxResults", "5")
+        .append_pair("printType", "books")
+        .append_pair("country", "IT");
+    if let Ok(response) = client.get(books_url).send().await {
+        if let Ok(data) = response
+            .error_for_status()
+            .map_err(|error| error.to_string())
+        {
+            if let Ok(json) = data.json::<serde_json::Value>().await {
+                for item in json
+                    .get("items")
+                    .and_then(|value| value.as_array())
+                    .into_iter()
+                    .flatten()
+                {
+                    let volume = &item["volumeInfo"];
+                    let title = volume["title"].as_str().unwrap_or("Libro").to_string();
+                    let authors = volume["authors"]
+                        .as_array()
+                        .map(|items| {
+                            items
+                                .iter()
+                                .filter_map(|item| item.as_str())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        })
+                        .unwrap_or_default();
+                    let description = volume["description"].as_str().unwrap_or("");
+                    let snippet = shorten_text(
+                        &format!(
+                            "{}{}",
+                            if authors.is_empty() {
+                                String::new()
+                            } else {
+                                format!("Autore: {authors}. ")
+                            },
+                            description
+                        ),
+                        900,
+                    );
+                    let retail = &item["saleInfo"]["retailPrice"];
+                    let price = retail["amount"].as_f64().map(|amount| {
+                        format!(
+                            "Prezzo Google Books: {amount:.2} {}",
+                            retail["currencyCode"].as_str().unwrap_or("")
+                        )
+                    });
+                    let id = item["id"].as_str().unwrap_or("");
+                    if !id.is_empty() {
+                        results.push(WebSearchResult {
+                            title,
+                            url: format!("https://books.google.com/books?id={id}"),
+                            snippet,
+                            source: "Google Books".into(),
+                            price,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    for (language, label) in [("it", "Wikipedia"), ("en", "Wikipedia (EN)")] {
+        let endpoint = format!("https://{language}.wikipedia.org/w/api.php");
+        let Ok(mut wiki_url) = reqwest::Url::parse(&endpoint) else {
+            continue;
+        };
+        wiki_url
+            .query_pairs_mut()
+            .append_pair("action", "query")
+            .append_pair("generator", "search")
+            .append_pair("gsrsearch", &query)
+            .append_pair("gsrnamespace", "0")
+            .append_pair("gsrlimit", "5")
+            .append_pair("prop", "extracts")
+            .append_pair("exintro", "1")
+            .append_pair("explaintext", "1")
+            .append_pair("exchars", "750")
+            .append_pair("format", "json")
+            .append_pair("formatversion", "2");
+        let Ok(response) = client.get(wiki_url).send().await else {
+            continue;
+        };
+        let Ok(response) = response.error_for_status() else {
+            continue;
+        };
+        let Ok(json) = response.json::<serde_json::Value>().await else {
+            continue;
+        };
+        let pages = json["query"]["pages"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
+        if pages.is_empty() {
+            continue;
+        }
+        for page in pages {
+            let title = page["title"]
+                .as_str()
+                .unwrap_or("Voce Wikipedia")
+                .to_string();
+            let page_id = page["pageid"].as_u64().unwrap_or(0);
+            if page_id == 0 {
+                continue;
+            }
+            results.push(WebSearchResult {
+                title,
+                url: format!("https://{language}.wikipedia.org/?curid={page_id}"),
+                snippet: shorten_text(page["extract"].as_str().unwrap_or(""), 900),
+                source: label.into(),
+                price: None,
+            });
+        }
+        if results
+            .iter()
+            .any(|result| result.source.starts_with("Wikipedia"))
+        {
+            break;
+        }
+    }
+
+    if results.is_empty() {
+        return Err(
+            "Nessun risultato da Google Books o Wikipedia. Controlla la connessione e riprova."
+                .into(),
+        );
+    }
+    Ok(results)
+}
+
+#[tauri::command]
+fn open_web_result(url: String) -> Result<(), String> {
+    let parsed =
+        reqwest::Url::parse(&url).map_err(|_| "Link della fonte non valido".to_string())?;
+    let host = parsed.host_str().unwrap_or_default();
+    if parsed.scheme() != "https"
+        || !(host == "books.google.com" || host == "it.wikipedia.org" || host == "en.wikipedia.org")
+    {
+        return Err("Il link non appartiene a una fonte consentita".into());
+    }
+
+    #[cfg(target_os = "windows")]
+    let mut command = {
+        let mut command = std::process::Command::new("rundll32.exe");
+        command
+            .arg("url.dll,FileProtocolHandler")
+            .arg(parsed.as_str());
+        command
+    };
+    #[cfg(target_os = "macos")]
+    let mut command = {
+        let mut command = std::process::Command::new("open");
+        command.arg(parsed.as_str());
+        command
+    };
+    #[cfg(target_os = "linux")]
+    let mut command = {
+        let mut command = std::process::Command::new("xdg-open");
+        command.arg(parsed.as_str());
+        command
+    };
+
+    command
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| format!("Impossibile aprire la fonte: {error}"))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -229,6 +435,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             open_dictionary_url,
             open_spotify_app,
+            search_web,
+            open_web_result,
             get_spotify_playback,
             spotify_media_control,
             qwen_model_status,
