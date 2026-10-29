@@ -1,12 +1,12 @@
 [package]
 name = "carta-reader"
-version = "2.1.9"
-description = "Un lettore EPUB desktop con note ed evidenziazioni"
+version = "3.0.3"
+description = "Lettore desktop EPUB, PDF e Markdown con note ed evidenziazioni"
 authors = ["Carta"]
 edition = "2021"
 
 [package.metadata.tauri-winres]
-FileDescription = "Lettore EPUB Carta"
+FileDescription = "Lettore desktop Carta"
 ProductName = "Carta"
 OriginalFilename = "Carta.exe"
 LegalCopyright = "Copyright Carta"

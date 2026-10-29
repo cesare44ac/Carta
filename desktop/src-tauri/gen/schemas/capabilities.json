@@ -1,1 +1,1 @@
-{"default":{"identifier":"default","description":"Permessi per la finestra principale di Carta","local":true,"windows":["main"],"permissions":["core:default","core:event:default"]}}
+{"default":{"identifier":"default","description":"Permessi per la finestra principale di Carta","local":true,"windows":["main"],"permissions":["core:event:allow-listen","core:event:allow-unlisten"]}}

@@ -28,6 +28,7 @@
     'setColumns(2)': () => window.setColumns?.(2),
     'removeSelectedHighlight()': () => window.removeSelectedHighlight?.(),
     'addSelectionNote()': () => window.addSelectionNote?.(),
+    'askAboutSelection()': () => window.askAboutSelection?.(),
     'downloadQwen()': () => window.downloadQwen?.(),
     'askAssistant()': () => window.askAssistant?.(),
     "askAssistant('spiega')": () => window.askAssistant?.('spiega'),

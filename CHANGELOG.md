@@ -1,5 +1,42 @@
 # Registro delle modifiche
 
+## 3.0.3
+
+- Compattata la barra di lettura: percentuale in un badge leggero e rimossa la barra di avanzamento.
+- Sostituita la scritta “Libreria” con un pulsante icona accessibile.
+- Reso il salto pagina PDF selezionabile digitando il numero, senza frecce o etichetta ridondante.
+- Chiarito il selettore lingua mostrando il nome completo di ciascuna lingua.
+
+## 3.0.2
+
+- Rimossa la barra PDF separata e spostati zoom e salto pagina nella barra superiore.
+- Semplificato lo stato di lettura: in alto restano percentuale e pagina, senza tempo residuo o parole al minuto.
+
+## 3.0.1
+
+- Corretto il contenitore del lettore PDF: la barra superiore e i controlli restano visibili, mentre la rotella scorre le pagine nell'area dedicata senza spostare l'intera schermata.
+- Il cambio pagina aggiorna correttamente l'indicatore e il progresso.
+
+## 3.0.0
+
+- Aggiunti il lettore PDF locale con pagine a scorrimento verticale continuo, rendering progressivo, zoom e salto diretto alla pagina.
+- Aggiunte selezione del testo, evidenziazioni a colori e note collegate a pagina e posizione nei PDF.
+- Aggiunta lettura di file Markdown con formattazione locale, selezione, evidenziazioni e note ancorate al testo.
+- Sanificato il contenuto Markdown e disattivati i collegamenti esterni nel lettore.
+- Aggiornato il file picker e la libreria per distinguere EPUB, PDF e Markdown.
+- Aggiornata la versione desktop a 3.0.0; il lettore EPUB resta sul percorso esistente.
+
+## 2.1.10
+
+- Rafforzata la CSP: niente JavaScript inline e collegamento esplicito dei controlli dell’interfaccia.
+- Ridotti i permessi Tauri ai soli eventi necessari per il progresso del download.
+- Aggiornato Tokio a 1.54.1 per correggere una race condition segnalata da RustSec.
+- Limitati a 2 GB i download del modello Qwen e a 4 MB le risposte di ricerca; aggiunti timeout, HTTPS obbligatorio e pulizia dei file incompleti.
+- Convalidati origine, percorso e porta degli URL aperti dal dizionario e dalle fonti.
+- Reso sicuro il rendering di copertine e note ed esplicitamente disabilitati script e popup EPUB.
+- Aggiunti controlli di dimensione e struttura agli archivi EPUB prima dell’importazione e della lettura.
+- Aggiunti controlli di sicurezza automatici e test Rust per URL e limiti di trasferimento.
+
 ## 2.1.9
 
 - Corretto il ridimensionamento delle immagini EPUB nella build desktop: i limiti vengono applicati direttamente agli elementi del libro, senza dipendere da fogli di stile dinamici.

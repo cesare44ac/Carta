@@ -11,33 +11,64 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tauri::{Emitter, Manager, State};
 
-#[tauri::command]
-fn open_dictionary_url(url: String) -> Result<(), String> {
-    const ITALIAN_TO_ENGLISH: &str =
-        "https://dictionary.cambridge.org/it/dizionario/italiano-inglese/";
-    const ENGLISH_TO_ITALIAN: &str =
-        "https://dictionary.cambridge.org/it/dizionario/inglese-italiano/";
-
-    if !(url.starts_with(ITALIAN_TO_ENGLISH) || url.starts_with(ENGLISH_TO_ITALIAN)) {
+fn validate_dictionary_url(input: &str) -> Result<reqwest::Url, String> {
+    let parsed = reqwest::Url::parse(input)
+        .map_err(|_| "Indirizzo del dizionario non valido".to_string())?;
+    let valid_path = [
+        "/it/dizionario/italiano-inglese/",
+        "/it/dizionario/inglese-italiano/",
+    ]
+    .iter()
+    .any(|prefix| parsed.path().starts_with(prefix));
+    if parsed.scheme() != "https"
+        || parsed.host_str() != Some("dictionary.cambridge.org")
+        || !parsed.username().is_empty()
+        || parsed.password().is_some()
+        || parsed.port().is_some_and(|port| port != 443)
+        || !valid_path
+    {
         return Err("Indirizzo del dizionario non valido".into());
     }
+    Ok(parsed)
+}
+
+fn validate_web_result_url(input: &str) -> Result<reqwest::Url, String> {
+    let parsed =
+        reqwest::Url::parse(input).map_err(|_| "Link della fonte non valido".to_string())?;
+    let host = parsed.host_str().unwrap_or_default();
+    let valid_host =
+        host == "books.google.com" || host == "it.wikipedia.org" || host == "en.wikipedia.org";
+    if parsed.scheme() != "https"
+        || !valid_host
+        || !parsed.username().is_empty()
+        || parsed.password().is_some()
+        || parsed.port().is_some_and(|port| port != 443)
+    {
+        return Err("Il link non appartiene a una fonte consentita".into());
+    }
+    Ok(parsed)
+}
+
+#[tauri::command]
+fn open_dictionary_url(url: String) -> Result<(), String> {
+    let url = validate_dictionary_url(&url)?;
 
     #[cfg(target_os = "windows")]
     let mut command = {
         let mut command = std::process::Command::new("rundll32.exe");
-        command.arg("url.dll,FileProtocolHandler").arg(&url);
+        command.arg("url.dll,FileProtocolHandler").arg(url.as_str());
         command
     };
     #[cfg(target_os = "macos")]
     let mut command = {
         let mut command = std::process::Command::new("open");
-        command.arg(&url);
+        command.arg(url.as_str());
         command
     };
     #[cfg(target_os = "linux")]
     let mut command = {
         let mut command = std::process::Command::new("xdg-open");
-        command.arg(&url);
+        command.arg(url.as_str());
         command
     };
 
@@ -241,6 +272,45 @@ fn shorten_text(value: &str, max_chars: usize) -> String {
         .to_string()
 }
 
+const MAX_SEARCH_RESPONSE_BYTES: usize = 4 * 1024 * 1024;
+
+fn append_bounded_chunk(body: &mut Vec<u8>, chunk: &[u8], max_bytes: usize) -> Result<(), String> {
+    let next_len = body
+        .len()
+        .checked_add(chunk.len())
+        .ok_or_else(|| "La risposta di ricerca è troppo grande".to_string())?;
+    if next_len > max_bytes {
+        return Err("La risposta di ricerca è troppo grande".into());
+    }
+    body.extend_from_slice(chunk);
+    Ok(())
+}
+
+async fn read_json_response<T: serde::de::DeserializeOwned>(
+    response: reqwest::Response,
+    max_bytes: usize,
+) -> Result<T, String> {
+    let mut response = response
+        .error_for_status()
+        .map_err(|error| format!("Risposta di ricerca non valida: {error}"))?;
+    if response
+        .content_length()
+        .is_some_and(|length| length > max_bytes as u64)
+    {
+        return Err("La risposta di ricerca è troppo grande".into());
+    }
+    let mut body = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|error| format!("Lettura della risposta di ricerca non riuscita: {error}"))?
+    {
+        append_bounded_chunk(&mut body, &chunk, max_bytes)?;
+    }
+    serde_json::from_slice(&body)
+        .map_err(|error| format!("Risposta di ricerca non leggibile: {error}"))
+}
+
 #[tauri::command]
 async fn search_web(query: String) -> Result<Vec<WebSearchResult>, String> {
     let query = query.trim();
@@ -249,7 +319,7 @@ async fn search_web(query: String) -> Result<Vec<WebSearchResult>, String> {
     }
     let query = shorten_text(query, 240);
     let client = reqwest::Client::builder()
-        .user_agent("Carta Reader/2.1.9 (book research)")
+        .user_agent("Carta Reader/3.0.3 (book research)")
         .timeout(std::time::Duration::from_secs(12))
         .build()
         .map_err(|error| format!("Avvio della ricerca non riuscito: {error}"))?;
@@ -264,59 +334,56 @@ async fn search_web(query: String) -> Result<Vec<WebSearchResult>, String> {
         .append_pair("printType", "books")
         .append_pair("country", "IT");
     if let Ok(response) = client.get(books_url).send().await {
-        if let Ok(data) = response
-            .error_for_status()
-            .map_err(|error| error.to_string())
+        if let Ok(json) =
+            read_json_response::<serde_json::Value>(response, MAX_SEARCH_RESPONSE_BYTES).await
         {
-            if let Ok(json) = data.json::<serde_json::Value>().await {
-                for item in json
-                    .get("items")
-                    .and_then(|value| value.as_array())
-                    .into_iter()
-                    .flatten()
-                {
-                    let volume = &item["volumeInfo"];
-                    let title = volume["title"].as_str().unwrap_or("Libro").to_string();
-                    let authors = volume["authors"]
-                        .as_array()
-                        .map(|items| {
-                            items
-                                .iter()
-                                .filter_map(|item| item.as_str())
-                                .collect::<Vec<_>>()
-                                .join(", ")
-                        })
-                        .unwrap_or_default();
-                    let description = volume["description"].as_str().unwrap_or("");
-                    let snippet = shorten_text(
-                        &format!(
-                            "{}{}",
-                            if authors.is_empty() {
-                                String::new()
-                            } else {
-                                format!("Autore: {authors}. ")
-                            },
-                            description
-                        ),
-                        900,
-                    );
-                    let retail = &item["saleInfo"]["retailPrice"];
-                    let price = retail["amount"].as_f64().map(|amount| {
-                        format!(
-                            "Prezzo Google Books: {amount:.2} {}",
-                            retail["currencyCode"].as_str().unwrap_or("")
-                        )
+            for item in json
+                .get("items")
+                .and_then(|value| value.as_array())
+                .into_iter()
+                .flatten()
+            {
+                let volume = &item["volumeInfo"];
+                let title = volume["title"].as_str().unwrap_or("Libro").to_string();
+                let authors = volume["authors"]
+                    .as_array()
+                    .map(|items| {
+                        items
+                            .iter()
+                            .filter_map(|item| item.as_str())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    })
+                    .unwrap_or_default();
+                let description = volume["description"].as_str().unwrap_or("");
+                let snippet = shorten_text(
+                    &format!(
+                        "{}{}",
+                        if authors.is_empty() {
+                            String::new()
+                        } else {
+                            format!("Autore: {authors}. ")
+                        },
+                        description
+                    ),
+                    900,
+                );
+                let retail = &item["saleInfo"]["retailPrice"];
+                let price = retail["amount"].as_f64().map(|amount| {
+                    format!(
+                        "Prezzo Google Books: {amount:.2} {}",
+                        retail["currencyCode"].as_str().unwrap_or("")
+                    )
+                });
+                let id = item["id"].as_str().unwrap_or("");
+                if !id.is_empty() {
+                    results.push(WebSearchResult {
+                        title,
+                        url: format!("https://books.google.com/books?id={id}"),
+                        snippet,
+                        source: "Google Books".into(),
+                        price,
                     });
-                    let id = item["id"].as_str().unwrap_or("");
-                    if !id.is_empty() {
-                        results.push(WebSearchResult {
-                            title,
-                            url: format!("https://books.google.com/books?id={id}"),
-                            snippet,
-                            source: "Google Books".into(),
-                            price,
-                        });
-                    }
                 }
             }
         }
@@ -343,10 +410,9 @@ async fn search_web(query: String) -> Result<Vec<WebSearchResult>, String> {
         let Ok(response) = client.get(wiki_url).send().await else {
             continue;
         };
-        let Ok(response) = response.error_for_status() else {
-            continue;
-        };
-        let Ok(json) = response.json::<serde_json::Value>().await else {
+        let Ok(json) =
+            read_json_response::<serde_json::Value>(response, MAX_SEARCH_RESPONSE_BYTES).await
+        else {
             continue;
         };
         let pages = json["query"]["pages"]
@@ -392,14 +458,7 @@ async fn search_web(query: String) -> Result<Vec<WebSearchResult>, String> {
 
 #[tauri::command]
 fn open_web_result(url: String) -> Result<(), String> {
-    let parsed =
-        reqwest::Url::parse(&url).map_err(|_| "Link della fonte non valido".to_string())?;
-    let host = parsed.host_str().unwrap_or_default();
-    if parsed.scheme() != "https"
-        || !(host == "books.google.com" || host == "it.wikipedia.org" || host == "en.wikipedia.org")
-    {
-        return Err("Il link non appartiene a una fonte consentita".into());
-    }
+    let parsed = validate_web_result_url(&url)?;
 
     #[cfg(target_os = "windows")]
     let mut command = {
@@ -446,9 +505,78 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("errore durante l'avvio di Carta");
 }
+
+#[cfg(test)]
+mod security_tests {
+    use super::*;
+
+    #[test]
+    fn dictionary_links_require_the_expected_https_origin_and_path() {
+        assert!(validate_dictionary_url(
+            "https://dictionary.cambridge.org/it/dizionario/inglese-italiano/reader"
+        )
+        .is_ok());
+        assert!(validate_dictionary_url(
+            "https://dictionary.cambridge.org.evil.test/it/dizionario/inglese-italiano/reader"
+        )
+        .is_err());
+        assert!(validate_dictionary_url(
+            "https://user@dictionary.cambridge.org/it/dizionario/inglese-italiano/reader"
+        )
+        .is_err());
+        assert!(validate_dictionary_url(
+            "https://dictionary.cambridge.org:444/it/dizionario/inglese-italiano/reader"
+        )
+        .is_err());
+        assert!(validate_dictionary_url(
+            "https://dictionary.cambridge.org/it/dizionario/inglese-italiano.evil/reader"
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn research_links_reject_credentials_non_https_and_nonstandard_ports() {
+        assert!(validate_web_result_url("https://books.google.com/books?id=abc").is_ok());
+        assert!(validate_web_result_url("http://books.google.com/books?id=abc").is_err());
+        assert!(validate_web_result_url("https://books.google.com.evil.test/").is_err());
+        assert!(validate_web_result_url("https://user@books.google.com/").is_err());
+        assert!(validate_web_result_url("https://books.google.com:444/").is_err());
+    }
+
+    #[test]
+    fn bounded_response_builder_never_exceeds_its_limit() {
+        let mut body = vec![1, 2];
+        assert!(append_bounded_chunk(&mut body, &[3, 4], 4).is_ok());
+        assert_eq!(body, vec![1, 2, 3, 4]);
+        assert!(append_bounded_chunk(&mut body, &[5], 4).is_err());
+        assert_eq!(body, vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn model_download_is_capped() {
+        assert_eq!(
+            next_model_download_size(MAX_MODEL_DOWNLOAD_BYTES - 1, 1).unwrap(),
+            MAX_MODEL_DOWNLOAD_BYTES
+        );
+        assert!(next_model_download_size(MAX_MODEL_DOWNLOAD_BYTES, 1).is_err());
+        assert!(next_model_download_size(u64::MAX, 1).is_err());
+    }
+}
 const QWEN_MODEL_URL: &str = "https://huggingface.co/gguf/Qwen3.5-2B-GGUF/resolve/47f5192dcee31b32db0ba0acc04cccef89cb4b2c/qwen3.5-2b-Q4_K_M.gguf?download=true";
 const QWEN_MODEL_FILE: &str = "qwen3.5-2b-Q4_K_M.gguf";
 const QWEN_MODEL_SHA256: &str = "9a3d0aa6c920f096441139b6a254542da855223fdad06855ea00c6c087fd713d";
+const MIN_MODEL_DOWNLOAD_BYTES: u64 = 500_000_000;
+const MAX_MODEL_DOWNLOAD_BYTES: u64 = 2_000_000_000;
+
+fn next_model_download_size(downloaded: u64, chunk_len: usize) -> Result<u64, String> {
+    let next = downloaded
+        .checked_add(chunk_len as u64)
+        .ok_or_else(|| "Il download del modello è troppo grande".to_string())?;
+    if next > MAX_MODEL_DOWNLOAD_BYTES {
+        return Err("Il download del modello supera il limite di 2 GB".into());
+    }
+    Ok(next)
+}
 
 struct LocalAiEngine {
     model: LlamaModel,
@@ -481,45 +609,65 @@ async fn download_qwen_model(app: tauri::AppHandle) -> Result<(), String> {
     std::fs::create_dir_all(dir)
         .map_err(|e| format!("Impossibile creare la cartella del modello: {e}"))?;
     let partial = path.with_extension("gguf.part");
-    let mut response = reqwest::Client::new()
-        .get(QWEN_MODEL_URL)
-        .send()
-        .await
-        .map_err(|e| format!("Download non riuscito: {e}"))?
-        .error_for_status()
-        .map_err(|e| format!("Download non riuscito: {e}"))?;
-    let total = response.content_length().unwrap_or(0);
-    let mut file = std::fs::File::create(&partial).map_err(|e| e.to_string())?;
-    let mut digest = sha2::Sha256::new();
-    let mut downloaded = 0_u64;
-    while let Some(chunk) = response
-        .chunk()
-        .await
-        .map_err(|e| format!("Download interrotto: {e}"))?
-    {
-        file.write_all(&chunk)
-            .map_err(|e| format!("Salvataggio modello non riuscito: {e}"))?;
-        digest.update(&chunk);
-        downloaded += chunk.len() as u64;
-        let percent = if total > 0 {
-            ((downloaded.saturating_mul(100) / total).min(100)) as u8
-        } else {
-            0
-        };
-        let _ = app.emit("qwen-download-progress", percent);
+    let client = reqwest::Client::builder()
+        .https_only(true)
+        .connect_timeout(std::time::Duration::from_secs(20))
+        .timeout(std::time::Duration::from_secs(60 * 60))
+        .redirect(reqwest::redirect::Policy::limited(5))
+        .build()
+        .map_err(|e| format!("Preparazione del download non riuscita: {e}"))?;
+    let result = async {
+        let mut response = client
+            .get(QWEN_MODEL_URL)
+            .send()
+            .await
+            .map_err(|e| format!("Download non riuscito: {e}"))?
+            .error_for_status()
+            .map_err(|e| format!("Download non riuscito: {e}"))?;
+        let total = response.content_length().unwrap_or(0);
+        if total > MAX_MODEL_DOWNLOAD_BYTES {
+            return Err("Il download del modello supera il limite di 2 GB".into());
+        }
+        let mut file = std::fs::File::create(&partial)
+            .map_err(|e| format!("Impossibile creare il file del modello: {e}"))?;
+        let mut digest = sha2::Sha256::new();
+        let mut downloaded = 0_u64;
+        while let Some(chunk) = response
+            .chunk()
+            .await
+            .map_err(|e| format!("Download interrotto: {e}"))?
+        {
+            downloaded = next_model_download_size(downloaded, chunk.len())?;
+            file.write_all(&chunk)
+                .map_err(|e| format!("Salvataggio modello non riuscito: {e}"))?;
+            digest.update(&chunk);
+            let percent = downloaded
+                .saturating_mul(100)
+                .checked_div(total)
+                .map(|value| value.min(100) as u8)
+                .unwrap_or(0);
+            let _ = app.emit("qwen-download-progress", percent);
+        }
+        file.flush().map_err(|e| e.to_string())?;
+        file.sync_all().map_err(|e| e.to_string())?;
+        drop(file);
+        if downloaded < MIN_MODEL_DOWNLOAD_BYTES || (total > 0 && downloaded != total) {
+            return Err("Il file scaricato è incompleto".into());
+        }
+        if format!("{:x}", digest.finalize()) != QWEN_MODEL_SHA256 {
+            return Err("Verifica di integrità del modello non riuscita".into());
+        }
+        Ok(())
     }
-    file.flush().map_err(|e| e.to_string())?;
-    drop(file);
-    if downloaded < 500_000_000 || (total > 0 && downloaded != total) {
+    .await;
+    if let Err(error) = result {
         let _ = std::fs::remove_file(&partial);
-        return Err("Il file scaricato è incompleto".into());
+        return Err(error);
     }
-    if format!("{:x}", digest.finalize()) != QWEN_MODEL_SHA256 {
+    if let Err(error) = std::fs::rename(&partial, &path) {
         let _ = std::fs::remove_file(&partial);
-        return Err("Verifica di integrità del modello non riuscita".into());
+        return Err(format!("Impossibile completare il salvataggio: {error}"));
     }
-    std::fs::rename(&partial, &path)
-        .map_err(|e| format!("Impossibile completare il salvataggio: {e}"))?;
     Ok(())
 }
 
@@ -531,7 +679,7 @@ fn generate_local_answer(
     let mut params = LlamaContextParams::default().with_n_ctx(NonZeroU32::new(4096));
     params = params.with_n_threads(4).with_n_threads_batch(4);
     let mut context = model
-        .new_context(&backend, params)
+        .new_context(backend, params)
         .map_err(|e| format!("Preparazione del modello non riuscita: {e}"))?;
     let bounded = prompt.chars().take(9000).collect::<String>();
     let chat = format!("<|im_start|>system\nSei l'assistente di lettura di Carta. Rispondi in italiano, con chiarezza e senza inventare informazioni assenti dal passaggio. Distingui sempre ciò che dice il testo dalla tua interpretazione.\n<|im_end|>\n<|im_start|>user\n{bounded}\n<|im_end|>\n<|im_start|>assistant\n");
@@ -555,8 +703,7 @@ fn generate_local_answer(
         LlamaSampler::dist(42),
     ]);
     let mut output = Vec::new();
-    let mut position = batch.n_tokens();
-    for _ in 0..384 {
+    for position in (batch.n_tokens()..).take(384) {
         let token = sampler.sample(&context, batch.n_tokens() - 1);
         sampler.accept(token);
         if model.vocab().is_eog(token) {
@@ -570,7 +717,6 @@ fn generate_local_answer(
         context
             .decode(&mut batch)
             .map_err(|e| format!("Generazione interrotta: {e}"))?;
-        position += 1;
     }
     Ok(String::from_utf8_lossy(&output).trim().to_string())
 }

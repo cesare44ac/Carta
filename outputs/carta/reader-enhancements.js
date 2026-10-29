@@ -1,6 +1,10 @@
 let noteDraftQuote = '';
 let noteDraftLocation = 0;
 let noteDraftCfi = '';
+let noteDraftType = 'epub';
+let noteDraftPage = null;
+let noteDraftAnchor = null;
+let noteDraftSegments = null;
 
 function updateNoteQuotePreview() {
   let preview = $('noteQuotePreview');
@@ -14,20 +18,24 @@ function updateNoteQuotePreview() {
   preview.classList.toggle('hidden', !noteDraftQuote);
 }
 
-function beginNoteDraft({ quote = '', location = current?.progress || 0, cfi = '', id = null, text = '' } = {}) {
+function beginNoteDraft({ quote = '', location = current?.progress || 0, cfi = '', id = null, text = '', type = current?.type || 'epub', page = current?.current || null, anchor = null, segments = null } = {}) {
   activeNoteId = id;
   noteDraftQuote = quote;
   noteDraftLocation = location;
   noteDraftCfi = cfi;
+  noteDraftType = type;
+  noteDraftPage = page;
+  noteDraftAnchor = anchor;
+  noteDraftSegments = segments;
   $('noteInput').value = text;
-  $('composerLocation').textContent = `EPUB · ${Math.round(location * 100)}%`;
+  $('composerLocation').textContent = type === 'pdf' ? `PDF · pagina ${page || current?.current || 1}` : type === 'markdown' ? `Markdown · ${Math.round(location * 100)}%` : `EPUB · ${Math.round(location * 100)}%`;
   updateNoteQuotePreview();
   $('noteComposer').classList.remove('hidden');
   $('noteInput').focus();
 }
 
 window.newNote = function () {
-  beginNoteDraft({ location: current?.progress || 0, cfi: current?.cfi || '' });
+  beginNoteDraft({ location: current?.progress || 0, cfi: current?.cfi || '', type: current?.type || 'epub', page: current?.current || null });
 };
 
 window.addSelectionNote = function () {
@@ -36,7 +44,11 @@ window.addSelectionNote = function () {
   const draft = {
     quote: passage.text,
     location: passage.location ?? (current?.progress || 0),
-    cfi: passage.cfi || ''
+    cfi: passage.cfi || '',
+    type: passage.type || current?.type || 'epub',
+    page: passage.page || null,
+    anchor: passage.anchor || null,
+    segments: passage.segments || null
   };
   hideSelectionMenu();
   $('sidePanel').classList.add('open');
@@ -54,6 +66,10 @@ window.editNote = function (id) {
     quote: note.quote || '',
     location: note.location || 0,
     cfi: note.cfi || '',
+    type: note.type || current?.type || 'epub',
+    page: note.page || null,
+    anchor: note.anchor || null,
+    segments: note.segments || null,
     text: legacyQuoteOnly ? '' : note.text
   });
 };
@@ -64,6 +80,10 @@ window.cancelNote = function () {
   noteDraftQuote = '';
   noteDraftLocation = 0;
   noteDraftCfi = '';
+  noteDraftType = current?.type || 'epub';
+  noteDraftPage = null;
+  noteDraftAnchor = null;
+  noteDraftSegments = null;
   activeNoteId = null;
 };
 
@@ -79,6 +99,10 @@ window.saveNote = async function () {
     note.quote = noteDraftQuote || undefined;
     note.location = noteDraftLocation;
     note.cfi = noteDraftCfi || undefined;
+    note.type = noteDraftType;
+    note.page = noteDraftPage || undefined;
+    note.anchor = noteDraftAnchor || undefined;
+    note.segments = noteDraftSegments || undefined;
     note.updated = Date.now();
   } else {
     note = {
@@ -88,6 +112,10 @@ window.saveNote = async function () {
       quote: noteDraftQuote || undefined,
       location: noteDraftLocation,
       cfi: noteDraftCfi || undefined,
+      type: noteDraftType,
+      page: noteDraftPage || undefined,
+      anchor: noteDraftAnchor || undefined,
+      segments: noteDraftSegments || undefined,
       updated: Date.now()
     };
     currentNotes.unshift(note);
@@ -114,7 +142,7 @@ window.renderNotes = function () {
     card.className = 'note-card';
     const location = document.createElement('div');
     location.className = 'note-loc';
-    location.textContent = `EPUB · ${Math.round((note.location || 0) * 100)}%`;
+    location.textContent = note.type === 'pdf' ? `PDF · pagina ${note.page || 1}` : note.type === 'markdown' ? `Markdown · ${Math.round((note.location || 0) * 100)}%` : `EPUB · ${Math.round((note.location || 0) * 100)}%`;
     card.append(location);
     const quoteText = note.quote || (note.text && note.text === note.quote ? note.text : '');
     if (quoteText) {
@@ -308,15 +336,16 @@ jumpControl.className = 'reader-jump';
 const jumpLabel = document.createElement('span');
 jumpLabel.textContent = 'Vai al';
 const jumpInput = document.createElement('input');
-jumpInput.type = 'number';
-jumpInput.min = '0';
-jumpInput.max = '100';
-jumpInput.step = '1';
+jumpInput.type = 'text';
+jumpInput.inputMode = 'numeric';
+jumpInput.pattern = '[0-9]*';
+jumpInput.maxLength = 3;
 jumpInput.value = '0';
 jumpInput.title = 'Inserisci una percentuale da 0 a 100';
 jumpInput.setAttribute('aria-label', 'Vai a una percentuale del libro');
 const jumpSuffix = document.createElement('span');
 jumpSuffix.textContent = '%';
+jumpInput.addEventListener('input', () => { jumpInput.value = jumpInput.value.replace(/\D/g, '').slice(0, 3); });
 jumpInput.addEventListener('change', () => {
   const percentage = Math.max(0, Math.min(100, Number(jumpInput.value) || 0));
   jumpInput.value = String(percentage);
@@ -340,7 +369,7 @@ window.updateProgress = function (progress) {
   scrubber.title = hasLocations ? 'Scegli la posizione nel libro' : 'Calcolo delle posizioni…';
   if (document.activeElement !== scrubber) {
     scrubber.value = String(Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000));
-    $('progressLabel').textContent = `${Math.round(Math.max(0, Math.min(1, progress || 0)) * 100)}% completato`;
+    $('progressLabel').textContent = `${Math.round(Math.max(0, Math.min(1, progress || 0)) * 100)}%`;
   }
   jumpInput.disabled = !hasLocations;
   jumpInput.title = hasLocations ? 'Inserisci una percentuale da 0 a 100' : 'Sto preparando le posizioni del libro';
@@ -358,8 +387,8 @@ const originalUpdateStats = window.updateStats;
 window.updateStats = function () {
   originalUpdateStats?.();
   const progress = $('progressLabel');
-  const fullProgress = `${Math.round(Math.max(0, Math.min(1, current?.progress || 0)) * 100)}% completato`;
-  progress.textContent = fullProgress.replace(' completato', '');
+  const fullProgress = `${Math.round(Math.max(0, Math.min(1, current?.progress || 0)) * 100)}%`;
+  progress.textContent = fullProgress;
   progress.title = fullProgress;
   const remaining = $('remainingLabel');
   const fullRemaining = remaining.textContent;

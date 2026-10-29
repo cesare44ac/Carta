@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Permessi per la finestra principale di Carta",
   "windows": ["main"],
-  "permissions": ["core:default", "core:event:default"]
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
 }

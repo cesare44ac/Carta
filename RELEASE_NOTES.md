@@ -1,6 +1,6 @@
-# Carta 2.1.9
+# Carta 3.0.3
 
-Carta è un lettore desktop per libri EPUB, con annotazioni e assistente AI locale.
+Carta è un lettore desktop EPUB, PDF e Markdown, con annotazioni e assistente AI locale.
 
 ## Lettura e annotazioni
 
@@ -8,6 +8,15 @@ Carta è un lettore desktop per libri EPUB, con annotazioni e assistente AI loca
 - Testo regolabile per colonne, dimensione e spaziatura.
 - Note collegate ai passaggi e raccolta separata delle evidenziazioni, con colori selezionabili.
 - Pannelli laterali richiudibili e assistente AI agganciabile accanto al libro.
+
+## Lettura PDF e Markdown
+
+- PDF con scorrimento verticale continuo; la rotella muove il documento in modo nativo, senza scatti forzati tra pagine.
+- Le pagine vicine alla posizione corrente vengono renderizzate progressivamente e quelle lontane vengono scaricate dalla memoria grafica.
+- Testo PDF selezionabile con evidenziazioni a colori e note collegate alla pagina e alla posizione nel documento.
+- Zoom, adattamento alla larghezza, salto diretto a una pagina e ripristino della posizione di lettura.
+- File Markdown formattati localmente, con selezione del testo, note ed evidenziazioni persistenti.
+- Il contenuto Markdown viene sanificato prima di essere mostrato; i collegamenti esterni restano disattivati.
 
 ## Assistente e integrazioni
 
@@ -20,10 +29,26 @@ Carta è un lettore desktop per libri EPUB, con annotazioni e assistente AI loca
 
 - Interfaccia in italiano e inglese.
 - Modalità scura rinnovata, sfumatura lilla laterale e logo aggiornato.
-- Barra superiore compatta con pagina, avanzamento, stima di lettura e controlli essenziali.
+- Barra superiore compatta con pagina, percentuale di avanzamento e controlli essenziali.
 
 ## Correzioni in questa versione
 
+- La barra mostra soltanto la percentuale in un piccolo riquadro; rimossa la barra di avanzamento.
+- Rimossa la parola “Pagina” dall’indicatore numerico e sostituito il pulsante Libreria con un’icona casa.
+- Il salto pagina PDF usa un campo testuale: il numero si digita da tastiera senza controlli a freccia.
+- Il selettore lingua mostra nomi completi e coerenti con la lingua dell’interfaccia.
+
+- Rimossa la barra PDF aggiuntiva; pagina e zoom sono accessibili dalla barra superiore.
+- Semplificati gli indicatori in alto: pagina e percentuale di lettura, senza ritmo in parole al minuto.
+- Corretta l'area di scorrimento PDF per mantenere fissi barra superiore e indicatore di pagina durante la lettura.
+- Il salto a una pagina e lo scorrimento aggiornano correttamente pagina corrente e progresso.
+
+- Rafforzata la sicurezza del WebView: CSP senza script inline, permessi Tauri ridotti e contenuti di copertine e note inseriti come testo.
+- Aggiornato Tokio alla versione correttiva 1.54.1.
+- Imposti limiti e timeout per il download Qwen e per le risposte delle ricerche online; verificato l’hash SHA-256 del modello.
+- Accettati solo link HTTPS con origine autorizzata per dizionario e fonti.
+- Disabilitati esplicitamente script e popup incorporati negli EPUB.
+- Aggiunti controlli su dimensione e contenuti dichiarati degli archivi EPUB prima di importarli o aprirli.
 - Corretto il ridimensionamento delle immagini EPUB nella build desktop: i limiti vengono applicati direttamente a immagini e figure per evitare che invadano il testo delle pagine vicine.
 - Migliorato il ridisegno del libro quando cambia la larghezza dell’area di lettura.
 

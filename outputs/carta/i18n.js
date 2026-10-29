@@ -18,11 +18,18 @@
     'I libri che segni come letti appariranno qui.': 'Books you mark as finished will appear here.',
     'La tua prossima lettura inizia qui': 'Your next read starts here',
     'Importa un libro in formato EPUB. I tuoi progressi e le tue note restano salvati su questo dispositivo.': 'Import an EPUB book. Your progress and notes stay on this device.',
+    'Importa EPUB, PDF o Markdown. Progressi e annotazioni restano salvati su questo dispositivo.': 'Import EPUB, PDF, or Markdown files. Progress and annotations stay on this device.',
     'Scegli un libro': 'Choose a book',
     'Aggiungi un libro': 'Add a book',
     'Trascina qui un EPUB': 'Drop an EPUB here',
+    'Trascina qui EPUB, PDF o Markdown': 'Drop EPUB, PDF, or Markdown files here',
     'Sfoglia file': 'Browse files',
     'Libreria': 'Library',
+    'Torna alla libreria': 'Back to library',
+    'Numero di pagina': 'Page number',
+    'Inserisci il numero della pagina': 'Type a page number',
+    'Vai a una percentuale del libro': 'Jump to a reading percentage',
+    'Inserisci una percentuale da 0 a 100': 'Enter a percentage from 0 to 100',
     'Torna alla pagina': 'Back to page',
     'completato': 'complete',
     'Calcolo del tempo…': 'Calculating reading time…',
@@ -48,6 +55,17 @@
     'In questo libro': 'About this book',
     'Colore della pagina': 'Page color',
     'Impaginazione EPUB': 'EPUB layout',
+    'Lettura PDF': 'PDF reader',
+    'Documento Markdown': 'Markdown document',
+    'Testo continuo': 'Continuous text',
+    'Scorrimento verticale continuo. Le pagine vengono renderizzate vicino alla posizione di lettura.': 'Continuous vertical scrolling. Pages render as they approach your reading position.',
+    'Testo formattato localmente. Le note restano collegate al passaggio selezionato.': 'Formatted locally. Notes remain linked to the selected passage.',
+    'Ingrandimento pagina': 'Page zoom',
+    'Ingrandimento PDF': 'PDF zoom',
+    'Pagina': 'Page',
+    'Adatta': 'Fit width',
+    'Riduci ingrandimento': 'Zoom out',
+    'Aumenta ingrandimento': 'Zoom in',
     'Una colonna': 'One column',
     'Due colonne': 'Two columns',
     'Dimensione del testo': 'Text size',
@@ -157,6 +175,19 @@
     'Scrivi qualcosa prima di salvare': 'Write something before saving',
     'Impossibile salvare il file: spazio esaurito?': 'Could not save the file. Is storage full?',
     'Impossibile aprire il file: formato non valido': 'Could not open the file: invalid format',
+    'Verifico il libro…': 'Checking the book…',
+    'Controllo il file EPUB': 'Checking the EPUB file',
+    'Il file EPUB supera il limite di 256 MB.': 'The EPUB file exceeds the 256 MB limit.',
+    'L’EPUB contiene troppi elementi o supera il limite di decompressione.': 'This EPUB has too many entries or exceeds the expanded size limit.',
+    'L’EPUB contiene un percorso interno non valido.': 'This EPUB contains an invalid internal path.',
+    'L’EPUB contiene un elemento troppo grande.': 'This EPUB contains an oversized entry.',
+    'L’EPUB supera il limite di decompressione.': 'This EPUB exceeds the expanded size limit.',
+    'Il file EPUB non è leggibile.': 'The EPUB file could not be read.',
+    'Lettore EPUB non disponibile.': 'The EPUB reader is unavailable.',
+    'Il file EPUB è danneggiato o non valido.': 'The EPUB file is damaged or invalid.',
+    'Il file EPUB non è valido.': 'The EPUB file is invalid.',
+    'Struttura EPUB non valida.': 'The EPUB structure is invalid.',
+    'Indice EPUB non valido.': 'The EPUB package index is invalid.',
     'Le parti evidenziate appariranno qui.': 'Your highlights will appear here.',
     'Seleziona un passaggio mentre leggi.': 'Select a passage while reading.',
     'Le tue annotazioni appariranno qui.': 'Your notes will appear here.',
@@ -204,6 +235,10 @@
       if (match) value = `${match[1]} estimated pages`;
       match = trimmed.match(/^EPUB · (\d+) pagine stimate$/);
       if (match) value = `EPUB · ${match[1]} estimated pages`;
+      match = trimmed.match(/^PDF · pagina (\d+)$/);
+      if (match) value = `PDF · page ${match[1]}`;
+      match = trimmed.match(/^Markdown · (\d+)%$/);
+      if (match) value = `Markdown · ${match[1]}%`;
       match = trimmed.match(/^(\d+) annotazione$/);
       if (match) value = `${match[1]} note`;
       match = trimmed.match(/^(\d+) annotazioni$/);
@@ -212,8 +247,8 @@
       if (match) value = `${match[1]} highlighted passage`;
       match = trimmed.match(/^(\d+) passaggi evidenziati$/);
       if (match) value = `${match[1]} highlighted passages`;
-      match = trimmed.match(/^EPUB\nImportato il (.+)\nLe note vengono salvate automaticamente\.$/);
-      if (match) value = `EPUB\nImported on ${match[1]}\nNotes are saved automatically.`;
+      match = trimmed.match(/^(EPUB|PDF|Markdown)\nImportato il (.+)\nLe note vengono salvate automaticamente\.$/);
+      if (match) value = `${match[1]}\nImported on ${match[2]}\nNotes are saved automatically.`;
       match = trimmed.match(/^Assistente non disponibile: (.+)$/);
       if (match) value = `Assistant unavailable: ${match[1]}`;
       match = trimmed.match(/^Download non riuscito: (.+)$/);
@@ -276,7 +311,7 @@
     label.className = 'language-picker';
     label.setAttribute('aria-label', language === 'en' ? 'Language' : 'Lingua');
     const select = document.createElement('select');
-    select.innerHTML = '<option value="it">IT</option><option value="en">EN</option>';
+    select.innerHTML = '<option value="it">Italiano</option><option value="en">Inglese</option>';
     select.value = language;
     select.addEventListener('change', () => window.setCartaLanguage(select.value));
     label.append(select);
@@ -288,8 +323,13 @@
     language = nextLanguage === 'en' ? 'en' : 'it';
     localStorage.setItem('carta-language', language);
     document.documentElement.lang = language;
-    document.querySelectorAll('.language-picker select').forEach(select => { select.value = language; });
-    document.querySelectorAll('.language-picker').forEach(label => label.setAttribute('aria-label', language === 'en' ? 'Language' : 'Lingua'));
+    document.querySelectorAll('.language-picker select').forEach(select => {
+      select.options[0].textContent = language === 'en' ? 'Italian' : 'Italiano';
+      select.options[1].textContent = language === 'en' ? 'English' : 'Inglese';
+      select.value = language;
+      select.setAttribute('aria-label', language === 'en' ? 'Interface language' : 'Lingua dell’interfaccia');
+    });
+    document.querySelectorAll('.language-picker').forEach(label => label.setAttribute('aria-label', language === 'en' ? 'Interface language' : 'Lingua dell’interfaccia'));
     document.querySelectorAll('.brandmark').forEach(mark => {
       mark.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7.2 6.5h13.2a4.2 4.2 0 0 1 4.2 4.2v14.8H11.4a4.2 4.2 0 0 1-4.2-4.2z"/><path d="M11.4 10.2h9.3M11.4 14h9.3M11.4 17.8h6.8M24.6 11.2h1.7v14.3h-15"/></svg>';
     });

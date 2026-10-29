@@ -1,16 +1,21 @@
 {
   "name": "carta-reader",
   "productName": "Carta",
-  "version": "2.1.9",
-  "description": "Un lettore EPUB desktop con note ed evidenziazioni",
+  "version": "3.0.3",
+  "description": "Lettore desktop EPUB, PDF e Markdown con note ed evidenziazioni",
   "author": "Carta",
   "scripts": {
     "start": "tauri dev",
-    "build": "tauri build"
+    "build": "tauri build",
+    "test:security": "node scripts/security-check.mjs",
+    "test:documents": "node scripts/pdf-reader-check.mjs"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.12.2",
-    "katex": "^0.19.0"
+    "dompurify": "3.4.17",
+    "katex": "^0.19.0",
+    "marked": "18.1.2",
+    "pdfjs-dist": "6.4.299"
   },
   "packageManager": "pnpm@9.15.5"
 }

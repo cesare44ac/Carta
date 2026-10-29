@@ -126,6 +126,7 @@
 
   function pageText() {
     try {
+      if (current?.type !== 'epub') return window.documentReaders?.getCurrentText(current?.id) || '';
       return (doc?.rendition?.getContents() || []).map((content) => content.document?.body?.innerText || '').join('\n').trim().slice(0, 9000);
     } catch { return ''; }
   }
@@ -138,6 +139,7 @@
   }
 
   async function bookCorpus(book) {
+    if (book.type === 'pdf') return window.documentReaders?.getCurrentText(book.id) || '';
     if (corpusCache.has(book.id)) return corpusCache.get(book.id);
     const request = indexedDB.open('carta-library-v1', 2);
     const database = await new Promise((resolve, reject) => {
@@ -150,6 +152,18 @@
       get.onerror = () => reject(get.error);
     });
     database.close();
+    if (book.type === 'markdown') {
+      const text = (await blob.text())
+        .replace(/```[\s\S]*?```/g, ' ')
+        .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+        .replace(/^\s{0,3}(?:#{1,6}|>|[-+*])\s*/gm, '')
+        .replace(/[`*_~]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 240000);
+      corpusCache.set(book.id, text);
+      return text;
+    }
     if (!window.JSZip) throw new Error('Lettore EPUB non disponibile');
     const zip = await window.JSZip.loadAsync(blob);
     const container = await zip.file('META-INF/container.xml')?.async('text');
