@@ -51,6 +51,45 @@ body.reading{overflow:hidden;background:var(--bg)}.reader-top{height:64px;border
     <button class="iconbtn ai-panel-close" type="button" aria-label="Chiudi assistente" onclick="closeAiPanel()">×</button>
   </header>
   <div id="assistantPane" class="panel-body ai-panel-body">
+    <details id="assistantProviderSettings" class="assistant-provider-settings">
+      <summary>Modello e connessione</summary>
+      <div class="assistant-provider-fields">
+        <label class="assistant-config-label" for="assistantProvider">Scegli un motore</label>
+        <select id="assistantProvider" class="assistant-config-input">
+          <option value="qwen">Qwen · locale, incluso</option>
+          <option value="ollama">Ollama · modelli sul computer</option>
+          <option value="openai">OpenAI · API</option>
+          <option value="anthropic">Claude · API</option>
+          <option value="gemini">Gemini · API</option>
+          <option value="compatible">OpenAI-compatible · API</option>
+        </select>
+        <div id="assistantCloudModelField" class="hidden">
+          <label class="assistant-config-label" for="assistantModel">Modello</label>
+          <input id="assistantModel" class="assistant-config-input" type="text" maxlength="200" autocomplete="off" spellcheck="false">
+        </div>
+        <div id="assistantOllamaModelField" class="hidden">
+          <label class="assistant-config-label" for="assistantOllamaModel">Modello installato</label>
+          <div class="assistant-config-inline">
+            <select id="assistantOllamaModel" class="assistant-config-input"></select>
+            <button id="assistantRefreshOllama" class="ai-tool-button" type="button" title="Aggiorna modelli">↻</button>
+          </div>
+        </div>
+        <div id="assistantEndpointField" class="hidden">
+          <label id="assistantEndpointLabel" class="assistant-config-label" for="assistantEndpoint">Indirizzo del servizio locale</label>
+          <input id="assistantEndpoint" class="assistant-config-input" type="url" maxlength="500" autocomplete="off" spellcheck="false">
+        </div>
+        <div id="assistantApiKeyField" class="hidden">
+          <label class="assistant-config-label" for="assistantApiKey">Chiave API</label>
+          <input id="assistantApiKey" class="assistant-config-input" type="password" maxlength="4096" autocomplete="new-password" placeholder="Incolla la chiave del provider">
+        </div>
+        <div class="assistant-config-actions">
+          <button id="assistantSaveConnection" class="btn small primary" type="button">Salva connessione</button>
+          <button id="assistantRemoveApiKey" class="text-action hidden" type="button">Rimuovi chiave</button>
+        </div>
+        <p id="assistantConfigStatus" class="assistant-config-status" aria-live="polite"></p>
+        <p id="assistantCloudNotice" class="assistant-cloud-notice hidden">Con un provider cloud, il testo inviato e l’estratto del libro vengono trasmessi al servizio scelto. L’uso API può avere costi separati dall’abbonamento chat. Carta non può rilevare o riutilizzare automaticamente gli abbonamenti delle app ChatGPT, Claude o VS Code.</p>
+      </div>
+    </details>
     <div id="assistantSetup">
       <p class="assistant-description">Qwen3.5-2B gira su questo computer. Il modello occupa circa 1,3 GB e si scarica una volta sola.</p>
       <button id="downloadQwen" class="btn primary assistant-download" onclick="downloadQwen()">Scarica Qwen · 1,3 GB</button>
@@ -75,7 +114,7 @@ body.reading{overflow:hidden;background:var(--bg)}.reader-top{height:64px;border
   <div class="assistant-help-content">
     <p>Fai domande sul libro aperto: puoi chiedere una spiegazione, una traduzione o un riassunto. Seleziona un passaggio e scegli <strong>Chiedi all’AI</strong> per usarlo come contesto.</p>
     <p>Puoi anche chiedere a Carta di aprire un libro, andare a una percentuale di lettura, aggiungere una nota o controllare Spotify. Per esempio: <em>“vai al 42%”</em> o <em>“aggiungi nota: …”</em>.</p>
-    <p>Le risposte vengono generate da Qwen sul dispositivo. La chat rimane salvata per il libro corrente.</p>
+    <p>Le risposte vengono generate dal modello selezionato: Qwen e Ollama restano su questo dispositivo; un provider cloud riceve il testo inviato e gli estratti del libro. La chat rimane salvata per il libro corrente.</p>
   </div>
 </dialog><div id="bookContextMenu" class="book-context-menu hidden"></div><div id="selectionMenu" class="selection-menu hidden"><span class="selection-label">Evidenzia</span><div id="highlightColors" class="highlight-colors"></div><button id="removeHighlightAction" class="btn small remove-highlight hidden" onclick="removeSelectedHighlight()">Rimuovi</button><span class="selection-divider" aria-hidden="true"></span><button class="assistant-selection-action" type="button" onclick="askAboutSelection()">Chiedi all'AI</button><button class="dictionary-action" type="button">Dizionario</button><div id="dictionaryDirections" class="dictionary-directions hidden" role="group" aria-label="Lingua del dizionario"><button type="button" data-direction="italiano-inglese">IT → EN</button><button type="button" data-direction="inglese-italiano">EN → IT</button></div><button class="selection-note" onclick="addSelectionNote()">Nota</button></div><div id="loading" class="loading hidden"><div class="loading-card"><div class="spinner"></div><strong id="loadingTitle">Apro il tuo libro…</strong><p class="quiet" id="loadingText">Ci vorrà solo un momento</p></div></div><div id="toast" class="toast hidden"></div>
 <script src="./vendor/katex.min.js"></script><script src="./i18n.js"></script><script src="./app.js"></script><script src="./reader-enhancements.js"></script><script src="./spotify-controls.js"></script><script src="./tauri-actions.js"></script><script src="./assistant.js"></script><script src="./document-readers.js"></script></body></html>

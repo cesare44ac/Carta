@@ -1,6 +1,6 @@
 [package]
 name = "carta-reader"
-version = "3.0.3"
+version = "3.5.0"
 description = "Lettore desktop EPUB, PDF e Markdown con note ed evidenziazioni"
 authors = ["Carta"]
 edition = "2021"
@@ -23,6 +23,7 @@ serde = { version = "1", features = ["derive"] }
 tauri = { version = "2", features = [] }
 llama-cpp-2 = { version = "0.1.157", features = ["sampler"] }
 reqwest = { version = "0.13.5", features = ["stream", "json"] }
+keyring = "4.2.0"
 serde_json = "1"
 sha2 = "0.10.9"
 

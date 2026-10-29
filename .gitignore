@@ -8,3 +8,4 @@ desktop/src-tauri/target/
 out/
 *.gguf
 *.gguf.part
+releases/*.exe

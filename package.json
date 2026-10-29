@@ -1,12 +1,12 @@
 {
   "name": "carta-reader",
   "productName": "Carta",
-  "version": "3.0.3",
+  "version": "3.5.0",
   "description": "Lettore desktop EPUB, PDF e Markdown con note ed evidenziazioni",
   "author": "Carta",
   "scripts": {
     "start": "tauri dev",
-    "build": "tauri build",
+    "build": "tauri build && node scripts/copy-release.mjs",
     "test:security": "node scripts/security-check.mjs",
     "test:documents": "node scripts/pdf-reader-check.mjs"
   },

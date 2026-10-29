@@ -1,6 +1,19 @@
-# Carta 3.0.3
+# Carta 3.5.0
 
 Carta è un lettore desktop EPUB, PDF e Markdown, con annotazioni e assistente AI locale.
+
+## Assistente AI a scelta
+
+- Scelta tra Qwen integrato, modelli locali già installati con Ollama, OpenAI, Claude, Gemini e servizi compatibili con l’API OpenAI.
+- Elenco dei modelli Ollama rilevato automaticamente dal servizio locale e selezione dall’app.
+- Connessione cloud con chiave API inserita dall’utente; credenziali conservate nel portachiavi di sistema di Windows, non nei dati dell’interfaccia.
+- Le richieste cloud vengono inviate al provider scelto solo quando l’utente le invia; l’interfaccia avvisa che estratti del libro e messaggi lasciano il dispositivo e che l’uso API può essere fatturato separatamente.
+- Provider e modello selezionati vengono ricordati localmente. L’app non tenta di leggere sessioni o abbonamenti di altri software.
+
+## Installer
+
+- Ogni build copia l’installer Windows nella cartella stabile `releases/` alla radice della repository, con il nome `Carta_<versione>_x64-setup.exe`.
+- Il flusso GitHub Releases carica l’installer dalla stessa cartella, così le build locali e quelle pubblicate condividono il percorso.
 
 ## Lettura e annotazioni
 
@@ -20,7 +33,7 @@ Carta è un lettore desktop EPUB, PDF e Markdown, con annotazioni e assistente A
 
 ## Assistente e integrazioni
 
-- Chat persistente con Qwen, in grado di spiegare, tradurre e riassumere passaggi del libro.
+- Chat persistente con il provider AI selezionato, in grado di spiegare, tradurre e riassumere passaggi del libro.
 - Comandi per cercare contenuti nella libreria, aggiungere note o evidenziazioni e controllare la lettura.
 - Ricerca online facoltativa con risultati da Google Books e Wikipedia.
 - Controlli Spotify disponibili durante la lettura.

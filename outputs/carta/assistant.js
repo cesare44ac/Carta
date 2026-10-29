@@ -8,6 +8,193 @@
   let isAsking = false;
   let commandPassage = null;
   const corpusCache = new Map();
+  const aiConfigStorageKey = 'carta-ai-provider-v1';
+  const providerDefaults = {
+    provider: 'qwen',
+    models: {
+      ollama: '', openai: 'gpt-6-luna', anthropic: 'claude-haiku-4-5-20251001',
+      gemini: 'gemini-3.5-flash-lite', compatible: ''
+    },
+    endpoints: { ollama: 'http://127.0.0.1:11434', compatible: '' }
+  };
+  const validProviders = new Set(['qwen', 'ollama', 'openai', 'anthropic', 'gemini', 'compatible']);
+  let assistantConfig = readAiConfig();
+  let ollamaModels = [];
+  let ollamaAvailabilityLabel = 'Avvia Ollama e aggiorna l’elenco dei modelli.';
+  let providerKeyAvailable = false;
+
+  function readAiConfig() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(aiConfigStorageKey) || '{}');
+      return {
+        provider: validProviders.has(stored.provider) ? stored.provider : 'qwen',
+        models: { ...providerDefaults.models, ...(stored.models || {}) },
+        endpoints: { ...providerDefaults.endpoints, ...(stored.endpoints || {}) }
+      };
+    } catch {
+      return {
+        provider: 'qwen',
+        models: { ...providerDefaults.models },
+        endpoints: { ...providerDefaults.endpoints }
+      };
+    }
+  }
+
+  function persistAiConfig() {
+    localStorage.setItem(aiConfigStorageKey, JSON.stringify(assistantConfig));
+  }
+
+  function providerName(provider = assistantConfig.provider) {
+    return ({ qwen: 'Qwen', ollama: 'Ollama', openai: 'OpenAI', anthropic: 'Claude', gemini: 'Gemini', compatible: 'AI' })[provider] || 'AI';
+  }
+
+  function providerModel() {
+    if (assistantConfig.provider === 'ollama') return $ai('assistantOllamaModel')?.value || assistantConfig.models.ollama || '';
+    if (assistantConfig.provider === 'qwen') return 'qwen3.5-2b';
+    return $ai('assistantModel')?.value.trim() || assistantConfig.models[assistantConfig.provider] || '';
+  }
+
+  function updateCurrentProviderForm() {
+    const provider = assistantConfig.provider;
+    if (provider === 'ollama') assistantConfig.models.ollama = $ai('assistantOllamaModel')?.value || assistantConfig.models.ollama || '';
+    else if (provider !== 'qwen') assistantConfig.models[provider] = $ai('assistantModel')?.value.trim() || '';
+    if (provider === 'ollama' || provider === 'compatible') {
+      assistantConfig.endpoints[provider] = $ai('assistantEndpoint')?.value.trim() || '';
+    }
+    persistAiConfig();
+  }
+
+  function populateProviderForm() {
+    const provider = assistantConfig.provider;
+    $ai('assistantProvider').value = provider;
+    const cloud = ['openai', 'anthropic', 'gemini', 'compatible'].includes(provider);
+    $ai('assistantCloudModelField').classList.toggle('hidden', !cloud);
+    $ai('assistantOllamaModelField').classList.toggle('hidden', provider !== 'ollama');
+    $ai('assistantEndpointField').classList.toggle('hidden', !['ollama', 'compatible'].includes(provider));
+    $ai('assistantApiKeyField').classList.toggle('hidden', !cloud);
+    $ai('assistantCloudNotice').classList.toggle('hidden', !cloud);
+    if (cloud) {
+      $ai('assistantModel').value = assistantConfig.models[provider] || '';
+      $ai('assistantModel').placeholder = ({
+        openai: 'gpt-6-luna', anthropic: 'claude-haiku-4-5-20251001',
+        gemini: 'gemini-3.5-flash-lite', compatible: 'nome-modello'
+      })[provider];
+    }
+    if (provider === 'ollama' || provider === 'compatible') {
+      $ai('assistantEndpoint').value = assistantConfig.endpoints[provider] || '';
+      $ai('assistantEndpointLabel').textContent = provider === 'ollama' ? 'Indirizzo Ollama' : 'Indirizzo API compatibile';
+      $ai('assistantEndpoint').placeholder = provider === 'ollama' ? 'http://127.0.0.1:11434' : 'https://…/v1';
+    }
+    if (provider === 'ollama') {
+      const select = $ai('assistantOllamaModel');
+      select.replaceChildren(...ollamaModels.map(name => new Option(name, name)));
+      if (ollamaModels.includes(assistantConfig.models.ollama)) select.value = assistantConfig.models.ollama;
+      else if (ollamaModels.length) {
+        select.value = ollamaModels[0];
+        assistantConfig.models.ollama = select.value;
+        persistAiConfig();
+      }
+    }
+    $ai('assistantSetup').classList.toggle('hidden', provider !== 'qwen' || modelReady);
+    $ai('assistantWorkspace').classList.remove('hidden');
+    $ai('assistantRemoveApiKey').classList.toggle('hidden', !cloud || !providerKeyAvailable);
+    if (provider === 'qwen') {
+      $ai('assistantStatus').textContent = modelReady ? 'Qwen è pronto su questo dispositivo.' : 'Assistente locale · privato';
+      $ai('assistantConfigStatus').textContent = 'Il modello Qwen viene scaricato una volta e resta su questo dispositivo.';
+    } else if (provider === 'ollama') {
+      $ai('assistantStatus').textContent = 'Ollama · locale';
+      $ai('assistantConfigStatus').textContent = ollamaModels.length
+        ? `${ollamaModels.length} ${ollamaModels.length === 1 ? 'modello disponibile' : 'modelli disponibili'} su questo computer.`
+        : ollamaAvailabilityLabel;
+    } else {
+      $ai('assistantStatus').textContent = `${providerName(provider)} · cloud`;
+      $ai('assistantConfigStatus').textContent = providerKeyAvailable
+        ? 'Chiave API salvata nel portachiavi di sistema.'
+        : 'Inserisci la chiave API del provider per collegarti.';
+    }
+    const button = $ai('assistantAsk');
+    if (button && !isAsking) button.textContent = `Chiedi a ${providerName()}`;
+  }
+
+  async function refreshProviderStatus() {
+    providerKeyAvailable = false;
+    if (['openai', 'anthropic', 'gemini', 'compatible'].includes(assistantConfig.provider)) {
+      try {
+        providerKeyAvailable = await window.__TAURI__.core.invoke('ai_has_api_key', { provider: assistantConfig.provider });
+      } catch (error) {
+        $ai('assistantConfigStatus').textContent = `Portachiavi non disponibile: ${String(error?.message || error)}`;
+      }
+    }
+    populateProviderForm();
+  }
+
+  async function refreshOllamaModels() {
+    const endpoint = $ai('assistantEndpoint').value.trim() || 'http://127.0.0.1:11434';
+    ollamaAvailabilityLabel = 'Cerco i modelli installati…';
+    $ai('assistantConfigStatus').textContent = 'Cerco i modelli installati…';
+    try {
+      ollamaModels = await window.__TAURI__.core.invoke('ai_list_ollama_models', { endpoint });
+      ollamaAvailabilityLabel = ollamaModels.length
+        ? ''
+        : 'Nessun modello trovato. Installa un modello in Ollama e riprova.';
+      populateProviderForm();
+    } catch (error) {
+      ollamaModels = [];
+      ollamaAvailabilityLabel = String(error?.message || error || 'Ollama non raggiungibile');
+      populateProviderForm();
+    }
+  }
+
+  function initializeProviderSettings() {
+    $ai('assistantProvider').addEventListener('change', async event => {
+      updateCurrentProviderForm();
+      assistantConfig.provider = validProviders.has(event.target.value) ? event.target.value : 'qwen';
+      providerKeyAvailable = false;
+      persistAiConfig();
+      populateProviderForm();
+      if (assistantConfig.provider === 'ollama') await refreshOllamaModels();
+      else await refreshProviderStatus();
+    });
+    $ai('assistantModel').addEventListener('input', updateCurrentProviderForm);
+    $ai('assistantOllamaModel').addEventListener('change', updateCurrentProviderForm);
+    $ai('assistantEndpoint').addEventListener('change', () => {
+      updateCurrentProviderForm();
+      if (assistantConfig.provider === 'ollama') refreshOllamaModels();
+    });
+    $ai('assistantRefreshOllama').addEventListener('click', refreshOllamaModels);
+    $ai('assistantSaveConnection').addEventListener('click', async () => {
+      updateCurrentProviderForm();
+      const provider = assistantConfig.provider;
+      const key = $ai('assistantApiKey').value.trim();
+      if (['openai', 'anthropic', 'gemini', 'compatible'].includes(provider) && key) {
+        try {
+          await window.__TAURI__.core.invoke('ai_store_api_key', { provider, apiKey: key });
+          $ai('assistantApiKey').value = '';
+          providerKeyAvailable = true;
+        } catch (error) {
+          $ai('assistantConfigStatus').textContent = String(error?.message || error);
+          return toast(`Salvataggio non riuscito: ${String(error?.message || error)}`);
+        }
+      }
+      persistAiConfig();
+      populateProviderForm();
+      toast('Connessione salvata');
+    });
+    $ai('assistantRemoveApiKey').addEventListener('click', async () => {
+      try {
+        await window.__TAURI__.core.invoke('ai_remove_api_key', { provider: assistantConfig.provider });
+        providerKeyAvailable = false;
+        $ai('assistantApiKey').value = '';
+        populateProviderForm();
+        toast('Chiave rimossa dal portachiavi');
+      } catch (error) {
+        toast(`Rimozione non riuscita: ${String(error?.message || error)}`);
+      }
+    });
+    populateProviderForm();
+    refreshProviderStatus();
+    if (assistantConfig.provider === 'ollama') refreshOllamaModels();
+  }
 
   function updateAiPanelState() {
     const panel = $ai('aiPanel');
@@ -78,14 +265,14 @@
   async function refreshModelState() {
     try {
       modelReady = await window.__TAURI__.core.invoke('qwen_model_status');
-      $ai('assistantSetup').classList.toggle('hidden', modelReady);
+      populateProviderForm();
       $ai('assistantWorkspace').classList.remove('hidden');
-      $ai('assistantStatus').textContent = modelReady ? 'Qwen è pronto su questo dispositivo.' : 'Un aiuto privato per capire il testo.';
     } catch (error) {
       const detail = String(error?.message || error || 'errore sconosciuto');
-      $ai('assistantSetup')?.classList.remove('hidden');
+      modelReady = false;
+      populateProviderForm();
       $ai('assistantWorkspace')?.classList.remove('hidden');
-      $ai('assistantStatus').textContent = `Assistente non disponibile: ${detail}`;
+      if (assistantConfig.provider === 'qwen') $ai('assistantStatus').textContent = `Assistente non disponibile: ${detail}`;
       console.error('Impossibile verificare Qwen:', error);
     }
   }
@@ -352,7 +539,7 @@
       bubble.className = `assistant-message assistant-message-${message.role}`;
       const author = document.createElement('span');
       author.className = 'assistant-message-author';
-      author.textContent = message.role === 'user' ? 'Tu' : 'Carta · Qwen';
+      author.textContent = message.role === 'user' ? 'Tu' : `Carta · ${providerName()}`;
       bubble.append(author);
       const body = document.createElement('div');
       body.className = 'assistant-message-body';
@@ -525,7 +712,12 @@
         return;
       }
     }
-    if (!modelReady) return toast('Scarica prima Qwen per usare l’assistente');
+    const provider = assistantConfig.provider;
+    if (provider === 'qwen' && !modelReady) return toast('Scarica prima Qwen per usare l’assistente');
+    if (['openai', 'anthropic', 'gemini', 'compatible'].includes(provider) && !providerKeyAvailable) {
+      return toast('Apri “Modello e connessione” e salva una chiave API');
+    }
+    if (provider !== 'qwen' && !providerModel()) return toast('Seleziona un modello prima di inviare la richiesta');
     const source = selectedQuote || pageText();
     if (!source && !input && !chatMessages.length) return toast('Apri un libro o inserisci un testo');
     const button = $ai('assistantAsk');
@@ -573,15 +765,20 @@
       history ? `Conversazione recente:\n${history}` : '',
       `Utente: ${(question || 'Continua la conversazione sul libro.').slice(0, 600)}\nAssistente:`
     ].filter(Boolean).join('\n\n');
-    button.textContent = 'Qwen sta leggendo…';
+    button.textContent = `${providerName()} sta leggendo…`;
     if (displayQuestion) chatMessages.push({ role: 'user', text: displayQuestion });
-    chatMessages.push({ role: 'assistant', text: 'Sto preparando una risposta locale…', pending: true });
+    chatMessages.push({ role: 'assistant', text: provider === 'qwen' || provider === 'ollama' ? 'Sto preparando una risposta locale…' : 'Sto preparando la risposta…', pending: true });
     renderChat();
     saveChat();
     $ai('assistantInput').value = '';
     $ai('assistantSaveNote').classList.add('hidden');
     try {
-      const response = await window.__TAURI__.core.invoke('ask_qwen', { prompt });
+      const response = await window.__TAURI__.core.invoke('ask_ai', {
+        provider,
+        model: providerModel(),
+        endpoint: assistantConfig.endpoints[provider] || '',
+        prompt
+      });
       lastAnswer = cleanAssistantAnswer(response);
       chatMessages[chatMessages.length - 1] = { role: 'assistant', text: lastAnswer || 'Non è arrivata una risposta. Prova con un passaggio più breve.', sources: sourcesForAnswer };
       renderChat();
@@ -594,8 +791,8 @@
     } finally {
       isAsking = false;
       button.disabled = false;
-      button.textContent = 'Chiedi a Qwen';
-      $ai('assistantStatus').textContent = webError ? `Ricerca online non riuscita: ${webError}` : 'Qwen è pronto su questo dispositivo.';
+      button.textContent = `Chiedi a ${providerName()}`;
+      $ai('assistantStatus').textContent = webError ? `Ricerca online non riuscita: ${webError}` : (provider === 'qwen' ? 'Qwen è pronto su questo dispositivo.' : `${providerName()} è selezionato.`);
       document.querySelectorAll('.assistant-prompts button').forEach(item => { item.disabled = false; });
     }
   };
@@ -635,6 +832,6 @@
 
   $ai('assistantHelpToggle')?.addEventListener('click', () => $ai('assistantHelpDialog')?.showModal());
   $ai('assistantHelpClose')?.addEventListener('click', () => $ai('assistantHelpDialog')?.close());
-  document.addEventListener('DOMContentLoaded', () => { initializeDock(); refreshModelState(); }, { once: true });
-  if (document.readyState !== 'loading') { initializeDock(); refreshModelState(); }
+  document.addEventListener('DOMContentLoaded', () => { initializeDock(); initializeProviderSettings(); refreshModelState(); }, { once: true });
+  if (document.readyState !== 'loading') { initializeDock(); initializeProviderSettings(); refreshModelState(); }
 })();

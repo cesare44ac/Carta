@@ -1,5 +1,13 @@
 # Registro delle modifiche
 
+## 3.5.0
+
+- Aggiunta la scelta tra Qwen locale, Ollama e provider cloud OpenAI, Claude, Gemini e OpenAI-compatible.
+- Rilevamento dei modelli Ollama disponibili e selezione del modello dall’interfaccia.
+- Salvate le chiavi API nel portachiavi di sistema; preferenze di provider, modello e endpoint restano locali.
+- Aggiunto un avviso prima dell’uso cloud su invio degli estratti del libro e fatturazione API separata.
+- Stabilizzata la cartella degli installer: ogni build copia `Carta_<versione>_x64-setup.exe` nella cartella `releases/` alla radice e GitHub carica da lì.
+
 ## 3.0.3
 
 - Compattata la barra di lettura: percentuale in un badge leggero e rimossa la barra di avanzamento.

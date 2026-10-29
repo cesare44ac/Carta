@@ -676,6 +676,47 @@ body.ai-dock-open #readerView #epubContent {
   backdrop-filter: blur(14px);
 }
 .ai-panel-body .assistant-input { background: transparent; }
+
+.assistant-provider-settings {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin: 0 0 12px;
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+}
+.assistant-provider-settings > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 11px 13px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.assistant-provider-settings > summary::-webkit-details-marker { display: none; }
+.assistant-provider-settings > summary::after { content: '＋'; float: right; color: var(--muted); }
+.assistant-provider-settings[open] > summary::after { content: '−'; }
+.assistant-provider-fields { padding: 0 12px 12px; }
+.assistant-config-label { display: block; margin: 9px 0 5px; color: var(--muted); font-size: 10px; }
+.assistant-config-input {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  outline: 0;
+  background: color-mix(in srgb, var(--bg) 82%, var(--paper));
+  color: var(--ink);
+  font: 12px 'DM Sans', sans-serif;
+}
+.assistant-config-input:focus { border-color: var(--accent); }
+.assistant-config-inline { display: flex; gap: 7px; align-items: center; }
+.assistant-config-inline .assistant-config-input { flex: 1; }
+.assistant-config-actions { display: flex; align-items: center; gap: 12px; margin-top: 11px; }
+.assistant-config-status { min-height: 14px; margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.assistant-cloud-notice { margin: 7px 0 0; padding-top: 9px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; line-height: 1.5; }
+body[data-theme="dark"] .assistant-provider-settings { background: color-mix(in srgb, #191a1d 74%, transparent); }
+body[data-theme="dark"] .assistant-config-input { background: color-mix(in srgb, #111214 78%, var(--paper)); }
 body[data-theme="dark"] #readerView:fullscreen {
   background-color: #101112;
   background-image:

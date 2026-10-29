@@ -1,3 +1,4 @@
+use keyring::Entry as CredentialEntry;
 use llama_cpp_2::context::params::LlamaContextParams;
 use llama_cpp_2::llama_backend::LlamaBackend;
 use llama_cpp_2::llama_batch::LlamaBatch;
@@ -319,7 +320,7 @@ async fn search_web(query: String) -> Result<Vec<WebSearchResult>, String> {
     }
     let query = shorten_text(query, 240);
     let client = reqwest::Client::builder()
-        .user_agent("Carta Reader/3.0.3 (book research)")
+        .user_agent("Carta Reader/3.5.0 (book research)")
         .timeout(std::time::Duration::from_secs(12))
         .build()
         .map_err(|error| format!("Avvio della ricerca non riuscito: {error}"))?;
@@ -500,7 +501,12 @@ pub fn run() {
             spotify_media_control,
             qwen_model_status,
             download_qwen_model,
-            ask_qwen
+            ask_qwen,
+            ai_has_api_key,
+            ai_store_api_key,
+            ai_remove_api_key,
+            ai_list_ollama_models,
+            ask_ai
         ])
         .run(tauri::generate_context!())
         .expect("errore durante l'avvio di Carta");
@@ -748,4 +754,418 @@ async fn ask_qwen(
     })
     .await
     .map_err(|e| format!("Elaborazione AI interrotta: {e}"))?
+}
+
+const AI_CREDENTIAL_SERVICE: &str = "io.carta.reader.ai";
+const MAX_AI_PROMPT_CHARS: usize = 24_000;
+const MAX_AI_RESPONSE_BYTES: usize = 4 * 1024 * 1024;
+
+fn validate_cloud_provider(provider: &str) -> Result<&'static str, String> {
+    match provider {
+        "openai" => Ok("openai"),
+        "anthropic" => Ok("anthropic"),
+        "gemini" => Ok("gemini"),
+        "compatible" => Ok("compatible"),
+        _ => Err("Provider AI non supportato".into()),
+    }
+}
+
+fn credential_entry(provider: &str) -> Result<CredentialEntry, String> {
+    let provider = validate_cloud_provider(provider)?;
+    CredentialEntry::new(AI_CREDENTIAL_SERVICE, provider)
+        .map_err(|_| "Il portachiavi di sistema non è disponibile".to_string())
+}
+
+#[tauri::command]
+fn ai_has_api_key(provider: String) -> Result<bool, String> {
+    let entry = credential_entry(&provider)?;
+    Ok(entry.get_password().is_ok())
+}
+
+#[tauri::command]
+fn ai_store_api_key(provider: String, api_key: String) -> Result<(), String> {
+    let api_key = api_key.trim();
+    if api_key.is_empty() || api_key.len() > 4096 || api_key.chars().any(|c| c.is_control()) {
+        return Err("La chiave API non è valida".into());
+    }
+    credential_entry(&provider)?
+        .set_password(api_key)
+        .map_err(|_| "Non è stato possibile salvare la chiave nel portachiavi di sistema".into())
+}
+
+#[tauri::command]
+fn ai_remove_api_key(provider: String) -> Result<(), String> {
+    credential_entry(&provider)?
+        .delete_credential()
+        .map_err(|_| "Non è stato possibile rimuovere la chiave dal portachiavi di sistema".into())
+}
+
+fn is_loopback_host(host: &str) -> bool {
+    host.eq_ignore_ascii_case("localhost")
+        || host
+            .parse::<std::net::IpAddr>()
+            .is_ok_and(|address| address.is_loopback())
+}
+
+fn validate_ollama_endpoint(input: &str) -> Result<reqwest::Url, String> {
+    let url =
+        reqwest::Url::parse(input.trim()).map_err(|_| "Indirizzo Ollama non valido".to_string())?;
+    let host = url.host_str().unwrap_or_default();
+    if url.scheme() != "http"
+        || !is_loopback_host(host)
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || url.query().is_some()
+        || url.fragment().is_some()
+        || !matches!(url.path(), "" | "/")
+    {
+        return Err("Ollama deve essere raggiunto tramite un indirizzo locale (localhost)".into());
+    }
+    Ok(url)
+}
+
+fn validate_compatible_endpoint(input: &str) -> Result<reqwest::Url, String> {
+    let url = reqwest::Url::parse(input.trim())
+        .map_err(|_| "Indirizzo compatibile non valido".to_string())?;
+    let host = url.host_str().unwrap_or_default();
+    let local_http = url.scheme() == "http" && is_loopback_host(host);
+    if (!local_http && url.scheme() != "https")
+        || host.is_empty()
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || url.query().is_some()
+        || url.fragment().is_some()
+    {
+        return Err("Usa un indirizzo HTTPS oppure HTTP locale".into());
+    }
+    Ok(url)
+}
+
+fn validate_ai_model(model: &str, allow_slash: bool) -> Result<(), String> {
+    let valid = !model.is_empty()
+        && model.len() <= 200
+        && model.chars().all(|character| {
+            character.is_ascii_alphanumeric()
+                || matches!(character, '.' | '_' | '-' | ':')
+                || (allow_slash && character == '/')
+        });
+    if !valid {
+        return Err("Nome del modello non valido".into());
+    }
+    Ok(())
+}
+
+fn ai_http_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(12))
+        .timeout(std::time::Duration::from_secs(120))
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .map_err(|_| "Impossibile avviare il collegamento AI".into())
+}
+
+async fn read_ai_response(
+    response: reqwest::Response,
+    secret: Option<&str>,
+) -> Result<serde_json::Value, String> {
+    let status = response.status();
+    if response
+        .content_length()
+        .is_some_and(|length| length > MAX_AI_RESPONSE_BYTES as u64)
+    {
+        return Err("La risposta dell’AI è troppo grande".into());
+    }
+    let mut response = response;
+    let mut body = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|_| "Lettura della risposta AI non riuscita".to_string())?
+    {
+        append_bounded_chunk(&mut body, &chunk, MAX_AI_RESPONSE_BYTES)
+            .map_err(|_| "La risposta dell’AI è troppo grande".to_string())?;
+    }
+    let value: serde_json::Value = serde_json::from_slice(&body).map_err(|_| {
+        format!("Il provider AI ha restituito una risposta non leggibile ({status})")
+    })?;
+    if !status.is_success() {
+        let mut message = value
+            .pointer("/error/message")
+            .or_else(|| value.pointer("/error"))
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("richiesta non riuscita")
+            .to_string();
+        if let Some(secret) = secret.filter(|secret| !secret.is_empty()) {
+            message = message.replace(secret, "[chiave nascosta]");
+        }
+        return Err(format!(
+            "Provider AI: errore HTTP {} — {}",
+            status.as_u16(),
+            shorten_text(&message, 500)
+        ));
+    }
+    Ok(value)
+}
+
+async fn ollama_models(endpoint: &str) -> Result<Vec<String>, String> {
+    let mut url = validate_ollama_endpoint(endpoint)?;
+    url.set_path("/api/tags");
+    let response = ai_http_client()?
+        .get(url)
+        .send()
+        .await
+        .map_err(|_| "Ollama non è raggiungibile. Avvia Ollama e riprova".to_string())?;
+    let json = read_ai_response(response, None).await?;
+    let mut models = json
+        .get("models")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| "Ollama non ha restituito l’elenco dei modelli".to_string())?
+        .iter()
+        .filter_map(|model| {
+            model
+                .get("name")
+                .or_else(|| model.get("model"))
+                .and_then(serde_json::Value::as_str)
+        })
+        .take(200)
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    models.sort();
+    models.dedup();
+    Ok(models)
+}
+
+#[tauri::command]
+async fn ai_list_ollama_models(endpoint: String) -> Result<Vec<String>, String> {
+    ollama_models(&endpoint).await
+}
+
+fn extract_ai_text(provider: &str, response: &serde_json::Value) -> Option<String> {
+    let text = match provider {
+        "openai" | "compatible" => {
+            if let Some(text) = response
+                .get("output_text")
+                .and_then(serde_json::Value::as_str)
+            {
+                return Some(text.to_string());
+            }
+            if let Some(text) = response
+                .pointer("/choices/0/message/content")
+                .and_then(serde_json::Value::as_str)
+            {
+                return Some(text.to_string());
+            }
+            response
+                .get("output")?
+                .as_array()?
+                .iter()
+                .flat_map(|block| {
+                    block
+                        .get("content")
+                        .and_then(serde_json::Value::as_array)
+                        .into_iter()
+                        .flatten()
+                })
+                .filter_map(|item| item.get("text").and_then(serde_json::Value::as_str))
+                .collect::<Vec<_>>()
+                .join("\n")
+        }
+        "anthropic" => response
+            .get("content")?
+            .as_array()?
+            .iter()
+            .filter_map(|item| item.get("text").and_then(serde_json::Value::as_str))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        "gemini" => response
+            .pointer("/candidates/0/content/parts")?
+            .as_array()?
+            .iter()
+            .filter_map(|item| item.get("text").and_then(serde_json::Value::as_str))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        "ollama" => response.pointer("/message/content")?.as_str()?.to_string(),
+        _ => return None,
+    };
+    (!text.trim().is_empty()).then_some(text)
+}
+
+async fn ask_cloud_provider(
+    provider: &str,
+    model: &str,
+    endpoint: &str,
+    prompt: &str,
+) -> Result<String, String> {
+    let provider = validate_cloud_provider(provider)?;
+    validate_ai_model(model, false)?;
+    let api_key = credential_entry(provider)?.get_password().map_err(|_| {
+        "Salva una chiave API per questo provider nelle impostazioni AI".to_string()
+    })?;
+    let client = ai_http_client()?;
+    let request = match provider {
+        "openai" => client
+            .post("https://api.openai.com/v1/responses")
+            .bearer_auth(&api_key)
+            .json(&serde_json::json!({
+                "model": model,
+                "instructions": "Sei l'assistente di lettura di Carta. Rispondi in italiano, con chiarezza e senza inventare informazioni assenti dal passaggio. Distingui il testo dalla tua interpretazione.",
+                "input": prompt,
+                "store": false,
+                "max_output_tokens": 1600
+            })),
+        "anthropic" => client
+            .post("https://api.anthropic.com/v1/messages")
+            .header("x-api-key", &api_key)
+            .header("anthropic-version", "2023-06-01")
+            .json(&serde_json::json!({
+                "model": model,
+                "max_tokens": 1600,
+                "system": "Sei l'assistente di lettura di Carta. Rispondi in italiano, con chiarezza e senza inventare informazioni assenti dal passaggio. Distingui il testo dalla tua interpretazione.",
+                "messages": [{"role":"user","content":prompt}]
+            })),
+        "gemini" => {
+            let url = format!(
+                "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+            );
+            client
+                .post(url)
+                .header("x-goog-api-key", &api_key)
+                .json(&serde_json::json!({
+                    "systemInstruction": {"parts": [{"text": "Sei l'assistente di lettura di Carta. Rispondi in italiano, con chiarezza e senza inventare informazioni assenti dal passaggio. Distingui il testo dalla tua interpretazione."}]},
+                    "contents": [{"role":"user","parts":[{"text":prompt}]}],
+                    "generationConfig": {"maxOutputTokens": 1600}
+                }))
+        }
+        "compatible" => {
+            let mut base = validate_compatible_endpoint(endpoint)?;
+            let path = base.path().trim_end_matches('/');
+            let suffix = if path.ends_with("/v1") {
+                "chat/completions"
+            } else {
+                "v1/chat/completions"
+            };
+            base.set_path(&format!("{path}/{suffix}"));
+            client
+                .post(base)
+                .bearer_auth(&api_key)
+                .json(&serde_json::json!({
+                    "model": model,
+                    "messages": [
+                        {"role":"system","content":"Sei l'assistente di lettura di Carta. Rispondi in italiano e non inventare informazioni."},
+                        {"role":"user","content":prompt}
+                    ],
+                    "stream": false
+                }))
+        }
+        _ => return Err("Provider AI non supportato".into()),
+    };
+    let response = request.send().await.map_err(|_| {
+        format!("Connessione a {provider} non riuscita. Controlla rete e configurazione")
+    })?;
+    let value = read_ai_response(response, Some(&api_key)).await?;
+    extract_ai_text(provider, &value).ok_or_else(|| "Il provider AI non ha restituito testo".into())
+}
+
+async fn ask_ollama(endpoint: &str, model: &str, prompt: &str) -> Result<String, String> {
+    validate_ai_model(model, true)?;
+    let mut url = validate_ollama_endpoint(endpoint)?;
+    url.set_path("/api/chat");
+    let response = ai_http_client()?
+        .post(url)
+        .json(&serde_json::json!({
+            "model": model,
+            "messages": [
+                {"role":"system","content":"Sei l'assistente di lettura di Carta. Rispondi in italiano, con chiarezza e senza inventare informazioni assenti dal passaggio."},
+                {"role":"user","content":prompt}
+            ],
+            "stream": false
+        }))
+        .send()
+        .await
+        .map_err(|_| "Ollama non è raggiungibile. Avvia Ollama e riprova".to_string())?;
+    let value = read_ai_response(response, None).await?;
+    extract_ai_text("ollama", &value).ok_or_else(|| "Ollama non ha restituito testo".into())
+}
+
+#[tauri::command]
+async fn ask_ai(
+    app: tauri::AppHandle,
+    state: State<'_, LocalAiState>,
+    provider: String,
+    model: String,
+    endpoint: String,
+    prompt: String,
+) -> Result<String, String> {
+    let prompt = prompt.trim();
+    if prompt.is_empty() {
+        return Err("Inserisci una domanda".into());
+    }
+    if prompt.chars().count() > MAX_AI_PROMPT_CHARS {
+        return Err("Il testo da inviare è troppo lungo. Seleziona un passaggio più breve".into());
+    }
+    match provider.as_str() {
+        "qwen" => ask_qwen(app, state, prompt.to_string()).await,
+        "ollama" => ask_ollama(&endpoint, &model, prompt).await,
+        "openai" | "anthropic" | "gemini" | "compatible" => {
+            ask_cloud_provider(&provider, &model, &endpoint, prompt).await
+        }
+        _ => Err("Provider AI non supportato".into()),
+    }
+}
+
+#[cfg(test)]
+mod ai_provider_tests {
+    use super::*;
+
+    #[test]
+    fn ollama_is_restricted_to_local_addresses() {
+        assert!(validate_ollama_endpoint("http://127.0.0.1:11434").is_ok());
+        assert!(validate_ollama_endpoint("http://localhost:11434/").is_ok());
+        assert!(validate_ollama_endpoint("http://192.168.1.8:11434").is_err());
+        assert!(validate_ollama_endpoint("https://localhost:11434").is_err());
+        assert!(validate_ollama_endpoint("http://user@localhost:11434").is_err());
+    }
+
+    #[test]
+    fn compatible_services_require_https_or_loopback_http() {
+        assert!(validate_compatible_endpoint("https://ai.example/v1").is_ok());
+        assert!(validate_compatible_endpoint("http://127.0.0.1:1234/v1").is_ok());
+        assert!(validate_compatible_endpoint("http://ai.example/v1").is_err());
+        assert!(validate_compatible_endpoint("https://user@ai.example/v1").is_err());
+    }
+
+    #[test]
+    fn model_names_are_bounded_and_local_tags_are_supported() {
+        assert!(validate_ai_model("gemini-3.8-flash", false).is_ok());
+        assert!(validate_ai_model("gemma3:latest", true).is_ok());
+        assert!(validate_ai_model("hf.co/library/model:Q4_K_M", true).is_ok());
+        assert!(validate_ai_model("hf.co/library/model", false).is_err());
+        assert!(validate_ai_model("model\nleak", true).is_err());
+    }
+
+    #[test]
+    fn provider_responses_are_extracted_without_returning_raw_json() {
+        let openai =
+            serde_json::json!({"output":[{"content":[{"type":"output_text","text":"Risposta."}]}]});
+        let anthropic = serde_json::json!({"content":[{"type":"text","text":"Risposta Claude."}]});
+        let gemini =
+            serde_json::json!({"candidates":[{"content":{"parts":[{"text":"Risposta Gemini."}]}}]});
+        let ollama = serde_json::json!({"message":{"content":"Risposta locale."}});
+        assert_eq!(
+            extract_ai_text("openai", &openai).as_deref(),
+            Some("Risposta.")
+        );
+        assert_eq!(
+            extract_ai_text("anthropic", &anthropic).as_deref(),
+            Some("Risposta Claude.")
+        );
+        assert_eq!(
+            extract_ai_text("gemini", &gemini).as_deref(),
+            Some("Risposta Gemini.")
+        );
+        assert_eq!(
+            extract_ai_text("ollama", &ollama).as_deref(),
+            Some("Risposta locale.")
+        );
+    }
 }
