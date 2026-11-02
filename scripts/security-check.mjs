@@ -5,14 +5,18 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const [configText, capabilityText, html, actions, app, documentReaders, readerCss] = await Promise.all([
+const [configText, capabilityText, html, actions, app, assistant, rust, documentReaders, readerCss, marketplace, marketplaceCss] = await Promise.all([
   readFile(path.join(root, 'desktop/src-tauri/tauri.conf.json'), 'utf8'),
   readFile(path.join(root, 'desktop/src-tauri/capabilities/default.json'), 'utf8'),
   readFile(path.join(root, 'outputs/carta/index.html'), 'utf8'),
   readFile(path.join(root, 'outputs/carta/tauri-actions.js'), 'utf8'),
   readFile(path.join(root, 'outputs/carta/app.js'), 'utf8'),
+  readFile(path.join(root, 'outputs/carta/assistant.js'), 'utf8'),
+  readFile(path.join(root, 'desktop/src-tauri/src/lib.rs'), 'utf8'),
   readFile(path.join(root, 'outputs/carta/document-readers.js'), 'utf8'),
   readFile(path.join(root, 'outputs/carta/document-readers.css'), 'utf8'),
+  readFile(path.join(root, 'outputs/carta/marketplace.js'), 'utf8'),
+  readFile(path.join(root, 'outputs/carta/marketplace.css'), 'utf8'),
 ]);
 
 const config = JSON.parse(configText);
@@ -24,6 +28,40 @@ const scriptSrc = csp.match(/(?:^|;)\s*script-src\s+([^;]+)/)?.[1];
 assert.ok(scriptSrc, 'CSP must define script-src');
 assert.doesNotMatch(scriptSrc, /'unsafe-inline'|'unsafe-eval'/, 'script-src must reject inline scripts and eval');
 assert.match(csp, /worker-src\s+'self'\s+blob:/, 'Local PDF rendering workers must be allowed without remote worker code');
+assert.match(html, /id="discoverOverlay"[\s\S]*?aria-modal="true"/, 'Research discovery must use an accessible modal drawer');
+assert.match(html, /id="discoverOpen"[\s\S]*?toggleMarketplace\(\)/, 'Research discovery must be reachable from the library');
+assert.match(actions, /'toggleMarketplace\(\)'/, 'The library discovery button must work under the production CSP');
+assert.match(html, /marketplace\.js/, 'Research discovery behavior must load as a local script');
+assert.match(marketplaceCss, /inset:\s*0\s*auto\s*0\s*0/, 'The discovery drawer must slide in from the left');
+assert.doesNotMatch(marketplace, /\.innerHTML\s*=/, 'Remote research metadata must never reach an HTML injection sink');
+assert.match(marketplace, /search_open_access_research/, 'The marketplace must call the bounded native research search');
+assert.match(marketplace, /fetch_research_news/, 'The marketplace must load institutional news feeds on demand');
+assert.match(rust, /open_access\.is_oa:true/, 'Research results must be filtered to open access works');
+assert.match(rust, /MAX_SEARCH_RESPONSE_BYTES/, 'Research API responses must have a byte limit');
+assert.match(rust, /1024 \* 1024/, 'News feed responses must have a byte limit');
+assert.match(rust, /validate_research_result_url/, 'Research links must be validated before opening');
+
+const aiPanel = html.match(/<aside id="aiPanel"[\s\S]*?<\/aside>/)?.[0];
+const aiSettings = html.match(/<dialog id="aiSettingsDialog"[\s\S]*?<\/dialog>/)?.[0];
+assert.ok(aiPanel, 'AI chat panel must exist');
+assert.doesNotMatch(aiPanel, /assistantProvider|assistantModel|assistantSetup|downloadQwen/,
+  'Provider and model management must stay out of the chat panel');
+assert.ok(aiSettings, 'AI settings must use a dedicated dialog');
+assert.match(aiSettings, /assistantProvider|assistantModel|assistantSetup|downloadQwen/,
+  'The dedicated AI settings dialog must contain model management');
+assert.match(html, /id="libraryView"[\s\S]*?openAiSettings\(\)/,
+  'AI settings must be accessible from the library');
+assert.match(html, /id="readerView"[\s\S]*?openAiSettings\(\)/,
+  'AI settings must be accessible from the reader');
+assert.match(actions, /'openAiSettings\(\)'/, 'The CSP-safe static action map must bind AI settings');
+assert.match(assistant, /window\.openAiSettings\s*=\s*function/,
+  'AI settings must expose an open action');
+assert.match(assistant, /window\.openAiSettings\(\);[\s\S]{0,160}impostazioni AI/i,
+  'Missing AI configuration must open the dedicated settings dialog');
+assert.match(rust, /CredentialError::NoEntry/,
+  'A missing API key must be distinguished from a keyring failure');
+assert.match(rust, /Zeroizing::new\(/,
+  'API key copies must be cleared from memory when their scope ends');
 
 const actionBlock = actions.match(/const actions = \{([\s\S]*?)\n  \};/)?.[1];
 assert.ok(actionBlock, 'Static action map must exist');

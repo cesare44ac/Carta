@@ -73,6 +73,7 @@
     $ai('assistantEndpointField').classList.toggle('hidden', !['ollama', 'compatible'].includes(provider));
     $ai('assistantApiKeyField').classList.toggle('hidden', !cloud);
     $ai('assistantCloudNotice').classList.toggle('hidden', !cloud);
+    $ai('assistantUnloadQwen').classList.toggle('hidden', provider !== 'qwen' || !modelReady);
     if (cloud) {
       $ai('assistantModel').value = assistantConfig.models[provider] || '';
       $ai('assistantModel').placeholder = ({
@@ -100,7 +101,7 @@
     $ai('assistantRemoveApiKey').classList.toggle('hidden', !cloud || !providerKeyAvailable);
     if (provider === 'qwen') {
       $ai('assistantStatus').textContent = modelReady ? 'Qwen è pronto su questo dispositivo.' : 'Assistente locale · privato';
-      $ai('assistantConfigStatus').textContent = 'Il modello Qwen viene scaricato una volta e resta su questo dispositivo.';
+      $ai('assistantConfigStatus').textContent = 'Il file resta su questo dispositivo; Qwen viene rimosso dalla memoria dopo 5 minuti di inattività.';
     } else if (provider === 'ollama') {
       $ai('assistantStatus').textContent = 'Ollama · locale';
       $ai('assistantConfigStatus').textContent = ollamaModels.length
@@ -191,9 +192,39 @@
         toast(`Rimozione non riuscita: ${String(error?.message || error)}`);
       }
     });
+    $ai('assistantUnloadQwen').addEventListener('click', async () => {
+      const button = $ai('assistantUnloadQwen');
+      button.disabled = true;
+      try {
+        await window.__TAURI__.core.invoke('unload_qwen_model');
+        $ai('assistantConfigStatus').textContent = 'Memoria liberata. Qwen verrà ricaricato alla prossima domanda.';
+        toast('Memoria di Qwen liberata');
+      } catch (error) {
+        console.error('Impossibile liberare la memoria di Qwen:', error);
+        toast('Impossibile liberare la memoria di Qwen');
+      } finally {
+        button.disabled = false;
+      }
+    });
     populateProviderForm();
     refreshProviderStatus();
     if (assistantConfig.provider === 'ollama') refreshOllamaModels();
+  }
+
+  window.openAiSettings = function () {
+    const dialog = $ai('aiSettingsDialog');
+    if (!dialog) return;
+    if (!dialog.open) dialog.showModal();
+    populateProviderForm();
+    $ai('assistantProvider')?.focus({ preventScroll: true });
+  };
+
+  function initializeAiSettingsDialog() {
+    const dialog = $ai('aiSettingsDialog');
+    $ai('assistantSettingsClose')?.addEventListener('click', () => dialog?.close());
+    dialog?.addEventListener('click', event => {
+      if (event.target === dialog) dialog.close();
+    });
   }
 
   function updateAiPanelState() {
@@ -328,7 +359,7 @@
   async function bookCorpus(book) {
     if (book.type === 'pdf') return window.documentReaders?.getCurrentText(book.id) || '';
     if (corpusCache.has(book.id)) return corpusCache.get(book.id);
-    const request = indexedDB.open('carta-library-v1', 2);
+    const request = indexedDB.open('carta-library-v1');
     const database = await new Promise((resolve, reject) => {
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
@@ -398,7 +429,7 @@
 
   async function findBookContext(question) {
     const library = Array.isArray(books) && books.length ? books : await new Promise((resolve, reject) => {
-      const open = indexedDB.open('carta-library-v1', 2);
+      const open = indexedDB.open('carta-library-v1');
       open.onsuccess = () => { const db = open.result; const req = db.transaction('books').objectStore('books').getAll(); req.onsuccess = () => { db.close(); resolve(req.result); }; req.onerror = () => reject(req.error); };
       open.onerror = () => reject(open.error);
     });
@@ -474,12 +505,12 @@
       window.setTheme(value); return `Ho impostato il tema ${value === 'dark' ? 'scuro' : value === 'sepia' ? 'seppia' : 'chiaro'}.`;
     }
     if (/\b(mostra|leggi|elenca)\s+(le\s+)?note\b/.test(lower)) {
-      const notes = (await all('notes')).filter(note => !current || note.bookId === current.id).sort((a, b) => (b.updated || 0) - (a.updated || 0)).slice(0, 8);
+      const notes = (await (current ? byBook('notes', current.id) : all('notes'))).sort((a, b) => (b.updated || 0) - (a.updated || 0)).slice(0, 8);
       if (!notes.length) return current ? 'Questo libro non contiene note.' : 'La libreria non contiene note.';
       return notes.map(note => `• ${books.find(book => book.id === note.bookId)?.title || 'Libro'} · ${Math.round((note.location || 0) * 100)}%\n${note.text}`).join('\n\n').slice(0, 3000);
     }
     if (/\b(mostra|leggi|elenca)\s+(le\s+)?evidenziazioni\b/.test(lower)) {
-      const highlights = (await all('highlights')).filter(item => (!current || item.bookId === current.id) && item.type !== 'pdf').sort((a, b) => (b.updated || b.created || 0) - (a.updated || a.created || 0)).slice(0, 8);
+      const highlights = (await (current ? byBook('highlights', current.id) : all('highlights'))).filter(item => item.type !== 'pdf').sort((a, b) => (b.updated || b.created || 0) - (a.updated || a.created || 0)).slice(0, 8);
       if (!highlights.length) return current ? 'Questo libro non contiene evidenziazioni.' : 'La libreria non contiene evidenziazioni.';
       return highlights.map(item => `• ${books.find(book => book.id === item.bookId)?.title || 'Libro'} · ${Math.round((item.location || 0) * 100)}%\n${item.text}`).join('\n\n').slice(0, 3000);
     }
@@ -713,11 +744,21 @@
       }
     }
     const provider = assistantConfig.provider;
-    if (provider === 'qwen' && !modelReady) return toast('Scarica prima Qwen per usare l’assistente');
-    if (['openai', 'anthropic', 'gemini', 'compatible'].includes(provider) && !providerKeyAvailable) {
-      return toast('Apri “Modello e connessione” e salva una chiave API');
+    if (provider === 'qwen' && !modelReady) {
+      window.openAiSettings();
+      $ai('assistantConfigStatus').textContent = 'Scarica Qwen dalle impostazioni AI per usare l’assistente';
+      return;
     }
-    if (provider !== 'qwen' && !providerModel()) return toast('Seleziona un modello prima di inviare la richiesta');
+    if (['openai', 'anthropic', 'gemini', 'compatible'].includes(provider) && !providerKeyAvailable) {
+      window.openAiSettings();
+      $ai('assistantConfigStatus').textContent = 'Apri le impostazioni AI e salva una chiave API';
+      return;
+    }
+    if (provider !== 'qwen' && !providerModel()) {
+      window.openAiSettings();
+      $ai('assistantConfigStatus').textContent = 'Seleziona un modello nelle impostazioni AI prima di inviare la richiesta';
+      return;
+    }
     const source = selectedQuote || pageText();
     if (!source && !input && !chatMessages.length) return toast('Apri un libro o inserisci un testo');
     const button = $ai('assistantAsk');
@@ -832,6 +873,6 @@
 
   $ai('assistantHelpToggle')?.addEventListener('click', () => $ai('assistantHelpDialog')?.showModal());
   $ai('assistantHelpClose')?.addEventListener('click', () => $ai('assistantHelpDialog')?.close());
-  document.addEventListener('DOMContentLoaded', () => { initializeDock(); initializeProviderSettings(); refreshModelState(); }, { once: true });
-  if (document.readyState !== 'loading') { initializeDock(); initializeProviderSettings(); refreshModelState(); }
+  document.addEventListener('DOMContentLoaded', () => { initializeDock(); initializeAiSettingsDialog(); initializeProviderSettings(); refreshModelState(); }, { once: true });
+  if (document.readyState !== 'loading') { initializeDock(); initializeAiSettingsDialog(); initializeProviderSettings(); refreshModelState(); }
 })();

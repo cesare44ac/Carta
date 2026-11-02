@@ -9,11 +9,13 @@
   if (!title || !artist) return;
 
   let pollBusy = false;
+  let pollTimer = 0;
   let hasSpotifySession = false;
   const controls = [previous, toggle, next];
   const setEnabled = enabled => controls.forEach(button => { button.disabled = !enabled; });
 
   async function refreshSpotify() {
+    if (document.hidden || !document.body.classList.contains('reading')) return;
     if (pollBusy) return;
     pollBusy = true;
     try {
@@ -50,7 +52,25 @@
     } catch (error) {
       artist.textContent = String(error || 'Comando Spotify non riuscito');
     }
-    window.setTimeout(refreshSpotify, 250);
+    schedulePoll(250);
+  }
+
+  function schedulePoll(delay) {
+    window.clearTimeout(pollTimer);
+    if (document.hidden || !document.body.classList.contains('reading')) return;
+    pollTimer = window.setTimeout(async () => {
+      await refreshSpotify();
+      schedulePoll(hasSpotifySession ? 10000 : 30000);
+    }, delay);
+  }
+
+  function syncPolling() {
+    if (document.hidden || !document.body.classList.contains('reading')) {
+      window.clearTimeout(pollTimer);
+      pollTimer = 0;
+      return;
+    }
+    schedulePoll(150);
   }
 
   previous.addEventListener('click', () => control('previous'));
@@ -61,6 +81,10 @@
     catch { artist.textContent = 'Spotify non è installato o non può essere aperto'; }
   });
 
-  refreshSpotify();
-  window.setInterval(refreshSpotify, 2500);
+  const readerObserver = new MutationObserver(syncPolling);
+  readerObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  const readerView = document.getElementById('readerView');
+  if (readerView) readerObserver.observe(readerView, { attributes: true, attributeFilter: ['class'] });
+  document.addEventListener('visibilitychange', syncPolling);
+  syncPolling();
 })();

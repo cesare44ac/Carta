@@ -257,23 +257,25 @@ window.applyEpubThemeToDocument = function (frameDoc) {
   }[theme];
   const linkColor = { light: '#315d4b', sepia: '#69502f', dark: '#b9b4cc' }[theme];
   const systemFont = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif';
-  for (const element of [root, body, ...body.querySelectorAll('*')]) {
-    element.style.setProperty('color', colors[0], 'important');
-    element.style.setProperty('font-family', systemFont, 'important');
-    element.style.setProperty('line-height', String(lineSpacing), 'important');
+  let style = frameDoc.getElementById('carta-reader-theme-style');
+  if (!style) {
+    if (!frameDoc.head) frameDoc.documentElement.insertBefore(frameDoc.createElement('head'), body);
+    style = frameDoc.createElement('style');
+    style.id = 'carta-reader-theme-style';
+    style.textContent = [
+      'html, body { color: var(--carta-reader-foreground) !important; font-family: var(--carta-reader-font) !important; line-height: var(--carta-reader-line-spacing) !important; font-size: var(--carta-reader-font-size) !important; background-color: var(--carta-reader-background) !important; background-image: none !important; }',
+      'body * { color: var(--carta-reader-foreground) !important; font-family: var(--carta-reader-font) !important; line-height: var(--carta-reader-line-spacing) !important; }',
+      'a, a * { color: var(--carta-reader-link) !important; text-decoration: underline !important; text-decoration-color: var(--carta-reader-link) !important; }'
+    ].join('\n');
+    frameDoc.head.append(style);
   }
-  root.style.setProperty('font-size', `${fontSize}px`, 'important');
-  body.style.setProperty('font-size', `${fontSize}px`, 'important');
   const pageBackground = theme === 'dark' ? 'transparent' : colors[1];
-  root.style.setProperty('background-color', pageBackground, 'important');
-  body.style.setProperty('background-color', pageBackground, 'important');
-  root.style.setProperty('background-image', 'none', 'important');
-  body.style.setProperty('background-image', 'none', 'important');
-  for (const link of body.querySelectorAll('a')) {
-    link.style.setProperty('color', linkColor, 'important');
-    link.style.setProperty('text-decoration', 'underline', 'important');
-    link.style.setProperty('text-decoration-color', linkColor, 'important');
-  }
+  root.style.setProperty('--carta-reader-foreground', colors[0]);
+  root.style.setProperty('--carta-reader-font', systemFont);
+  root.style.setProperty('--carta-reader-line-spacing', String(lineSpacing));
+  root.style.setProperty('--carta-reader-font-size', `${fontSize}px`);
+  root.style.setProperty('--carta-reader-background', pageBackground);
+  root.style.setProperty('--carta-reader-link', linkColor);
 };
 
 window.applyEpubTheme = function () {

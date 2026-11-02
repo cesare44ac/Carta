@@ -4,8 +4,8 @@
   const MAX_PDF_PAGES = 5000;
   const MAX_MARKDOWN_LINES = 50_000;
   const MAX_CANVAS_EDGE = 4096;
-  const MAX_CANVAS_PIXELS = 8_000_000;
-  const RETAIN_PAGE_DISTANCE = 4;
+  const MAX_CANVAS_PIXELS = 6_000_000;
+  const RETAIN_PAGE_DISTANCE = 2;
   const HIGHLIGHT_PALETTE = new Set(highlightPalette.map(item => item.color));
   let pdfModulePromise;
   let reader = null;
@@ -64,11 +64,11 @@
   }
 
   async function loadBookData(book) {
-    const [notes, highlights, file] = await Promise.all([
-      all('notes'), all('highlights'), getStoredFile(book.id)
+    const [currentBookNotes, currentBookHighlights] = await Promise.all([
+      byBook('notes', book.id), byBook('highlights', book.id)
     ]);
-    currentNotes = notes.filter(note => note.bookId === book.id).sort((a, b) => (b.updated || 0) - (a.updated || 0));
-    currentHighlights = highlights.filter(item => item.bookId === book.id);
+    currentNotes = currentBookNotes.sort((a, b) => (b.updated || 0) - (a.updated || 0));
+    currentHighlights = currentBookHighlights;
     sessionStart = Date.now();
     sessionMinutes = 0;
     sessionProgress = book.progress || 0;
@@ -83,7 +83,6 @@
     renderHighlights();
     showTab('notes');
     syncEpubControls();
-    return file;
   }
 
   function clearReaderMode() {
@@ -216,7 +215,7 @@
         const page = Number(entry.target.dataset.page);
         if (entry.isIntersecting) enqueuePdfPage(page);
       }
-    }, { root: $('stageScroll'), rootMargin: '130% 0px', threshold: 0.01 });
+    }, { root: $('stageScroll'), rootMargin: '90% 0px', threshold: 0.01 });
     reader.slots.forEach(slot => reader.pageObserver.observe(slot));
     reader.resizeObserver = new ResizeObserver(() => resizePdfPages());
     reader.resizeObserver.observe($('stageScroll'));
@@ -423,17 +422,34 @@
   }
 
   let progressSaveTimer = 0;
+  let pdfScrollFrame = 0;
   function onPdfScroll() {
+    if (!reader || reader.mode !== 'pdf') return;
+    if (pdfScrollFrame) return;
+    const activeReader = reader;
+    pdfScrollFrame = requestAnimationFrame(() => {
+      pdfScrollFrame = 0;
+      if (reader !== activeReader) return;
+      updatePdfScrollPosition();
+    });
+  }
+
+  function updatePdfScrollPosition() {
     if (!reader || reader.mode !== 'pdf') return;
     const position = pdfProgressForPosition();
     if (!position) return;
+    const previousPage = reader.currentPage;
     reader.currentPage = position.page;
     current.current = position.page;
     current.pageOffset = position.within;
     current.progress = position.progress;
-    $('pdfPageJump').value = String(position.page);
-    window.updateProgress(position.progress);
-    if (reader.lastRecordedPage !== position.page || position.progress - reader.lastRecordedProgress >= 0.002) {
+    if (previousPage !== position.page) $('pdfPageJump').value = String(position.page);
+    const displayedProgress = Math.round(position.progress * 100);
+    if (previousPage !== position.page || reader.lastDisplayedProgress !== displayedProgress) {
+      reader.lastDisplayedProgress = displayedProgress;
+      window.updateProgress(position.progress);
+    }
+    if (reader.lastRecordedPage !== position.page || Math.abs(position.progress - reader.lastRecordedProgress) >= 0.002) {
       clearTimeout(progressSaveTimer);
       progressSaveTimer = setTimeout(() => {
         if (!reader || current?.id !== reader.bookId) return;
@@ -442,8 +458,10 @@
         recordProgress(position.progress);
       }, 350);
     }
-    cleanupPdfPages();
-    pumpPdfQueue();
+    if (previousPage !== position.page) {
+      cleanupPdfPages();
+      pumpPdfQueue();
+    }
   }
 
   function jumpToPdfPage(page, behavior = 'smooth') {
@@ -701,6 +719,8 @@
 
   function destroyDocumentReader() {
     if (!reader) return;
+    if (pdfScrollFrame) cancelAnimationFrame(pdfScrollFrame);
+    pdfScrollFrame = 0;
     clearTimeout(progressSaveTimer);
     clearTimeout(reader.selectionTimer);
     reader.pageObserver?.disconnect();

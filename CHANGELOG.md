@@ -1,5 +1,27 @@
 # Registro delle modifiche
 
+## 3.5.3
+
+- Aggiunto alla libreria il pannello laterale **Scopri** per trovare paper e ricerche ad accesso aperto, filtrabili per LSE, IMF, BCE e Federal Reserve.
+- Aggiunta una sezione separata per gli aggiornamenti recenti dai feed ufficiali di LSE, IMF, BCE e Federal Reserve.
+- I risultati mostrano abstract e collegamenti alla scheda o al PDF aperto; Carta non scarica né redistribuisce i documenti.
+- Limitate dimensione e durata delle richieste, validati i collegamenti HTTPS e aggiunta la traduzione inglese della nuova interfaccia.
+
+## 3.5.2
+
+- Aggiunta la sezione Crea con salvataggio automatico locale e bozze riapribili dalla libreria.
+- Aggiunti editor Markdown e anteprima delle formule LaTeX, con apertura di file Markdown e LaTeX.
+- Aggiunte esportazioni Markdown, EPUB e PDF tramite la finestra di stampa del sistema.
+- Aggiunti controlli tipografici per font, dimensione, interlinea, spazio tra paragrafi e allineamento, oltre a grassetto, corsivo, titoli, citazioni, elenchi e collegamenti.
+- Inclusi sei font open source e aggiunta l’importazione di font personali da file; i font inclusi e quelli personali possono essere incorporati negli EPUB.
+
+## 3.5.1
+
+- Spostate configurazione provider, modelli, connessioni e download Qwen in una finestra dedicata, accessibile dalla libreria e dal lettore; la chat AI resta essenziale.
+- Aperte automaticamente le impostazioni AI quando manca un modello, una chiave o una configurazione necessaria.
+- Limitate le dipendenze del portachiavi al backend nativo di ciascun sistema; rimosso il client ZBus segnalato come non mantenuto.
+- Distinti gli errori reali del portachiavi da una chiave semplicemente assente e azzerata la copia temporanea della chiave API dopo il salvataggio.
+
 ## 3.5.0
 
 - Aggiunta la scelta tra Qwen locale, Ollama e provider cloud OpenAI, Claude, Gemini e OpenAI-compatible.

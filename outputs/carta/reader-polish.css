@@ -725,6 +725,55 @@ body[data-theme="dark"] #readerView:fullscreen {
   background-repeat: no-repeat;
 }
 
+/* AI provider and model setup lives in a roomy dialog, outside the chat panel. */
+.assistant-settings-dialog {
+  width: min(600px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(820px, calc(100dvh - 36px));
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 28px 90px #0005;
+}
+.assistant-settings-dialog[open] { display: flex; flex-direction: column; }
+.assistant-settings-dialog::backdrop { background: #08080bb8; backdrop-filter: blur(6px); }
+.assistant-settings-head {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.assistant-settings-head > div { display: flex; align-items: center; gap: 13px; min-width: 0; }
+.assistant-settings-head strong { font-size: 16px; letter-spacing: -.25px; }
+.assistant-settings-head p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.assistant-settings-content { min-height: 0; overflow: auto; padding: 22px 24px 26px; }
+.assistant-provider-settings { margin: 0; border: 0; border-radius: 0; background: transparent; }
+.assistant-provider-fields { padding: 0; }
+.assistant-config-label { margin-top: 16px; font-size: 11px; }
+.assistant-provider-fields > .assistant-config-label:first-child { margin-top: 0; }
+.assistant-config-input { height: 42px; border-radius: 10px; font-size: 13px; }
+.assistant-config-actions { margin-top: 17px; }
+.assistant-config-status { min-height: 18px; margin-top: 11px; font-size: 11px; }
+.assistant-cloud-notice { margin-top: 16px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 11px; background: color-mix(in srgb, var(--bg) 60%, transparent); font-size: 11px; }
+.assistant-model-setup { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 20px; margin-top: 22px; padding: 17px 18px; border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--bg) 60%, transparent); }
+.assistant-model-setup > div:first-child > strong { font-size: 12px; }
+.assistant-model-setup .assistant-description { margin: 6px 0 0; font-size: 11px; }
+.assistant-model-setup .assistant-download { width: auto; min-width: 180px; margin: 0; }
+.assistant-model-setup .assistant-progress { grid-column: 1 / -1; margin: 0; }
+body[data-theme="dark"] .assistant-settings-dialog { background: color-mix(in srgb, #191a1d 92%, var(--paper)); }
+@media (max-width: 620px) {
+  .assistant-settings-head { padding: 17px 18px; }
+  .assistant-settings-content { padding: 18px; }
+  .assistant-model-setup { grid-template-columns: 1fr; }
+  .assistant-model-setup .assistant-download { width: 100%; }
+}
+
 /* Clip the pagination viewport; preserve publisher styles inside each page. */
 #epubContent { position: relative; overflow: hidden; isolation: isolate; }
 

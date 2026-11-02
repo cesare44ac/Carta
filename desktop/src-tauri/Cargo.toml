@@ -1,6 +1,6 @@
 [package]
 name = "carta-reader"
-version = "3.5.0"
+version = "3.5.3"
 description = "Lettore desktop EPUB, PDF e Markdown con note ed evidenziazioni"
 authors = ["Carta"]
 edition = "2021"
@@ -23,9 +23,19 @@ serde = { version = "1", features = ["derive"] }
 tauri = { version = "2", features = [] }
 llama-cpp-2 = { version = "0.1.157", features = ["sampler"] }
 reqwest = { version = "0.13.5", features = ["stream", "json"] }
-keyring = "4.2.0"
+keyring-core = "1.0.1"
 serde_json = "1"
+quick-xml = { version = "0.42", features = ["serialize"] }
+futures-util = "0.3"
 sha2 = "0.10.9"
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.62.2", features = ["Foundation", "Foundation_Collections", "Media_Control"] }
+windows-native-keyring-store = "1"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+apple-native-keyring-store = { version = "1", features = ["keychain"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+dbus-secret-service-keyring-store = { version = "1", features = ["crypto-rust", "vendored"] }

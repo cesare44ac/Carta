@@ -4,6 +4,62 @@
     'Importa un libro': 'Import a book',
     '＋ Importa un libro': '＋ Import a book',
     'Un posto tutto tuo': 'A space of your own',
+    'Crea': 'Create',
+    'Carta / Crea': 'Carta / Create',
+    'Apri .md / .tex': 'Open .md / .tex',
+    'Bozza locale': 'Local draft',
+    'Salva bozza': 'Save draft',
+    'Markdown': 'Markdown',
+    'Esporta PDF': 'Export PDF',
+    'Esporta EPUB': 'Export EPUB',
+    'Titolo del documento': 'Document title',
+    'Autore (facoltativo)': 'Author (optional)',
+    'Modalità editor': 'Editor mode',
+    'Scrivi': 'Write',
+    'Anteprima': 'Preview',
+    'Grassetto': 'Bold',
+    'Corsivo': 'Italic',
+    'Barrato': 'Strikethrough',
+    'Titolo sezione': 'Section heading',
+    'Citazione': 'Quote',
+    'Elenco': 'List',
+    'Collegamento': 'Link',
+    'Formula LaTeX in linea': 'Inline LaTeX formula',
+    'Formula LaTeX a blocco': 'Display LaTeX formula',
+    'Font': 'Font',
+    'Corpo': 'Size',
+    'Interlinea': 'Line spacing',
+    'Paragrafi': 'Paragraph spacing',
+    'Allineamento': 'Alignment',
+    'Allinea a sinistra': 'Align left',
+    'Giustifica': 'Justify',
+    'Centra': 'Center',
+    'Allinea a destra': 'Align right',
+    '＋ Font': '＋ Font',
+    'Rimuovi font personale': 'Remove custom font',
+    'Rimuovi font': 'Remove font',
+    'Comincia a scrivere… Usa Markdown e formule LaTeX: $x^2$ oppure $$E = mc^2$$.': 'Start writing… Use Markdown and LaTeX formulas: $x^2$ or $$E = mc^2$$.',
+    'Testo Markdown e formule LaTeX': 'Markdown text and LaTeX formulas',
+    'Anteprima del documento': 'Document preview',
+    'Markdown e LaTeX · salvataggio automatico sul dispositivo': 'Markdown and LaTeX · automatically saved on this device',
+    'I tuoi documenti': 'Your documents',
+    'Senza titolo': 'Untitled',
+    'parole': 'words',
+    'parola': 'word',
+    'Modifiche in attesa di salvataggio': 'Changes waiting to be saved',
+    'Salvato su questo dispositivo': 'Saved on this device',
+    'Bozza salvata localmente': 'Draft saved locally',
+    'Documento aperto nell’editor': 'Document opened in the editor',
+    'Bozza salvata su questo dispositivo': 'Draft saved on this device',
+    'Bozza eliminata': 'Draft deleted',
+    'File Markdown creato': 'Markdown file created',
+    'File EPUB creato': 'EPUB file created',
+    'Font personali': 'Your fonts',
+    'Font personale rimosso': 'Custom font removed',
+    'Aggiungi un font': 'Add a font',
+    'Importa un font dal computer': 'Import a font from your computer',
+    'Importa un font scaricato dal computer': 'Import a downloaded font from your computer',
+    'Esporta PDF con la finestra di stampa': 'Export PDF using the print dialog',
     'Leggi con calma.': 'Read at your own pace.',
     'I tuoi libri, le tue idee, il tuo ritmo.': 'Your books, your ideas, your pace.',
     'La tua libreria': 'Your library',
@@ -43,6 +99,18 @@
     'Riproduci o metti in pausa': 'Play or pause',
     'Assistente Carta': 'Carta assistant',
     'Assistente AI': 'AI assistant',
+    'Impostazioni AI': 'AI settings',
+    'Gestisci qui modelli e connessioni.': 'Manage models and connections here.',
+    'Chiudi impostazioni': 'Close settings',
+    'Modello locale Qwen': 'Local Qwen model',
+    'Il file resta su questo dispositivo; Qwen viene rimosso dalla memoria dopo 5 minuti di inattività.': 'The model file stays on this device; Qwen is unloaded from memory after 5 minutes of inactivity.',
+    'Libera memoria Qwen': 'Unload Qwen from memory',
+    'Memoria liberata. Qwen verrà ricaricato alla prossima domanda.': 'Memory freed. Qwen will load again for your next question.',
+    'Memoria di Qwen liberata': 'Qwen memory freed',
+    'Impossibile liberare la memoria di Qwen': 'Could not unload Qwen from memory',
+    'Scarica Qwen dalle impostazioni AI per usare l’assistente': 'Download Qwen in AI settings to use the assistant',
+    'Apri le impostazioni AI e salva una chiave API': 'Open AI settings and save an API key',
+    'Seleziona un modello nelle impostazioni AI prima di inviare la richiesta': 'Choose a model in AI settings before sending your request',
     'Apri assistente': 'Open assistant',
     'Ora locale': 'Local time',
     'Avanzamento di lettura': 'Reading progress',
@@ -236,6 +304,43 @@
     'Impossibile aprire il file: formato non valido': 'Could not open the file: invalid format',
     'Verifico il libro…': 'Checking the book…',
     'Controllo il file EPUB': 'Checking the EPUB file',
+    'Scopri ricerche e notizie': 'Discover research and news',
+    'Scopri': 'Discover',
+    'Paper e aggiornamenti da fonti accademiche e istituzioni pubbliche.': 'Papers and updates from academic sources and public institutions.',
+    'Argomento, autore o titolo': 'Topic, author, or title',
+    'Argomento, autore o titolo…': 'Topic, author, or title…',
+    'Cerca pubblicazioni': 'Search publications',
+    'Fonti': 'Sources',
+    'Filtra per fonte': 'Filter by source',
+    'Tutte': 'All',
+    'Tipo di contenuto': 'Content type',
+    'Ricerche': 'Research',
+    'Notizie': 'News',
+    'Cerca per argomento per trovare lavori con una copia ad accesso aperto.': 'Search by topic to find works with an open access copy.',
+    'Aggiornamenti recenti dalle fonti selezionate.': 'Recent updates from selected sources.',
+    'I risultati mostrano metadati e collegamenti alle fonti. L’accesso completo dipende dai diritti indicati dall’editore.': 'Results show metadata and links to sources. Full access depends on the rights stated by the publisher.',
+    'Accesso aperto': 'Open access',
+    'Apri scheda': 'Open record',
+    'Apri PDF': 'Open PDF',
+    'Apri la fonte': 'Open source',
+    'Cerca pubblicazioni con una copia ad accesso aperto.': 'Search for publications with an open access copy.',
+    'Inserisci un argomento, un autore o una parte del titolo.': 'Enter a topic, author, or part of a title.',
+    'Cerco pubblicazioni…': 'Searching publications…',
+    'Non ho trovato lavori aperti per questa ricerca.': 'No open works found for this search.',
+    'Nessun risultato. Prova un argomento più specifico o un’altra fonte.': 'No results. Try a more specific topic or another source.',
+    'Non ci sono aggiornamenti disponibili dalle fonti selezionate. Riprova più tardi.': 'No updates are available from the selected sources. Try again later.',
+    'Aggiornamenti non disponibili. Controlla la connessione e riprova.': 'Updates are unavailable. Check your connection and try again.',
+    'Carico gli aggiornamenti delle fonti…': 'Loading source updates…',
+    'Nessun aggiornamento disponibile': 'No updates available',
+    'Ricerca non riuscita': 'Search failed',
+    'Caricamento non riuscito': 'Loading failed',
+    'Fonte istituzionale': 'Institutional source',
+    'Ultime notizie IMF': 'Latest IMF news',
+    'IMF · Sito ufficiale': 'IMF · Official website',
+    'Il feed non è disponibile su questa rete. Apri il portale ufficiale per consultare gli aggiornamenti recenti.': 'The feed is unavailable on this network. Open the official portal to browse recent updates.',
+    'Non riesco ad aprire questo collegamento.': 'I could not open this link.',
+    'Catalogo non raggiungibile. Controlla la connessione e riprova.': 'The catalogue is unavailable. Check your connection and try again.',
+    'Notizie non raggiungibili. Controlla la connessione e riprova.': 'News are unavailable. Check your connection and try again.',
     'Il file EPUB supera il limite di 256 MB.': 'The EPUB file exceeds the 256 MB limit.',
     'L’EPUB contiene troppi elementi o supera il limite di decompressione.': 'This EPUB has too many entries or exceeds the expanded size limit.',
     'L’EPUB contiene un percorso interno non valido.': 'This EPUB contains an invalid internal path.',
@@ -271,7 +376,7 @@
   const attrOriginals = new WeakMap();
   const attrWrites = new WeakMap();
   let language = localStorage.getItem('carta-language') === 'en' ? 'en' : 'it';
-  const skipSelector = '#bookGrid, #readGrid, #readerTitle, #spotifyTrackTitle, #spotifyTrackArtist, .note-text, .note-card-comment, .note-card-quote, .note-quote-preview, .highlight-card blockquote, .assistant-message-body, .assistant-message-user, #assistantInput';
+  const skipSelector = '#bookGrid, #readGrid, #draftGrid .draft-open strong, #composerTitle, #composerAuthor, #composerSource, #composerPreview, #composerPrintSurface, #readerTitle, #spotifyTrackTitle, #spotifyTrackArtist, .note-text, .note-card-comment, .note-card-quote, .note-quote-preview, .highlight-card blockquote, .assistant-message-body, .assistant-message-user, #assistantInput';
 
   function translateText(original) {
     const trimmed = original.trim();
@@ -286,6 +391,10 @@
       if (match) value = `~${match[1]} hr ${match[2]} min remaining`;
       match = trimmed.match(/^(\d+) parole\/min$/);
       if (match) value = `${match[1]} words/min`;
+      match = trimmed.match(/^(\d+) parole$/);
+      if (match) value = `${match[1]} words`;
+      match = trimmed.match(/^(\d+) parola$/);
+      if (match) value = `${match[1]} word`;
       match = trimmed.match(/^(\d+) ppm$/);
       if (match) value = `${match[1]} words/min`;
       match = trimmed.match(/^(\d+) min$/);
@@ -374,6 +483,8 @@
     select.value = language;
     select.addEventListener('change', () => window.setCartaLanguage(select.value));
     label.append(select);
+    const slot = header.querySelector('.composer-language-slot');
+    if (slot) { slot.replaceWith(label); return; }
     const spacer = header.querySelector('.top-spacer');
     spacer ? spacer.after(label) : header.append(label);
   }
@@ -402,6 +513,7 @@
   function initialize() {
     addLanguagePicker(document.querySelector('#libraryView .topbar'));
     addLanguagePicker(document.querySelector('#readerView .reader-top'));
+    addLanguagePicker(document.querySelector('#composerView .composer-topbar'));
     window.setCartaLanguage(language);
     const observer = new MutationObserver(records => {
       for (const record of records) {
