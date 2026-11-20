@@ -119,6 +119,20 @@
     'Modalità di lettura': 'Reading appearance',
     'Schermo intero': 'Full screen',
     'Evidenziazioni': 'Highlights',
+    'Indice PDF': 'PDF index',
+    'Pagine salvate': 'Saved pages',
+    'PDF · pagina 1': 'PDF · page 1',
+    'Nome della pagina': 'Page title',
+    'Titolo o sezione (facoltativo)': 'Title or section (optional)',
+    'Salva pagina': 'Save page',
+    'Salva le pagine dell’indice o le sezioni che vuoi ritrovare rapidamente.': 'Save contents pages or sections you want to find again quickly.',
+    'Pagina aggiunta all’indice': 'Page added to index',
+    'Questa pagina è già salvata': 'This page is already saved',
+    'Cerca nelle note…': 'Search notes…',
+    'Cerca nelle note': 'Search notes',
+    'Nessuna nota corrisponde alla ricerca.': 'No notes match your search.',
+    'Invio salva · Ctrl+Invio nuova riga': 'Enter saves · Ctrl+Enter adds a line',
+    'Nota senza commento': 'Note without a comment',
     'La tua lettura': 'Your reading',
     'In questo libro': 'About this book',
     'Colore della pagina': 'Page color',
@@ -309,6 +323,10 @@
     'Paper e aggiornamenti da fonti accademiche e istituzioni pubbliche.': 'Papers and updates from academic sources and public institutions.',
     'Argomento, autore o titolo': 'Topic, author, or title',
     'Argomento, autore o titolo…': 'Topic, author, or title…',
+    'Tema': 'Topic',
+    'Tema facoltativo…': 'Topic (optional)…',
+    'Temi suggeriti in locale dai titoli della libreria; la ricerca parte dopo una tua scelta.': 'Topics are suggested locally from your library titles; nothing is searched until you choose to search.',
+    'Inserisci un argomento o scegli un tema.': 'Enter a search term or choose a topic.',
     'Cerca pubblicazioni': 'Search publications',
     'Fonti': 'Sources',
     'Filtra per fonte': 'Filter by source',
@@ -405,6 +423,10 @@
       if (match) value = `EPUB · ${match[1]} estimated pages`;
       match = trimmed.match(/^PDF · pagina (\d+)$/);
       if (match) value = `PDF · page ${match[1]}`;
+      match = trimmed.match(/^Pagina (\d+)$/);
+      if (match) value = `Page ${match[1]}`;
+      match = trimmed.match(/^(\d+) di (\d+) note?$/);
+      if (match) value = `${match[1]} of ${match[2]} ${match[2] === '1' ? 'note' : 'notes'}`;
       match = trimmed.match(/^Markdown · (\d+)%$/);
       if (match) value = `Markdown · ${match[1]}%`;
       match = trimmed.match(/^(\d+) annotazione$/);

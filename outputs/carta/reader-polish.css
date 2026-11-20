@@ -488,7 +488,7 @@ body.ai-dock-open #readerView:fullscreen .reader-layout { grid-template-columns:
 @media(max-width: 850px) {
   :root { --assistant-dock-width: min(390px, 42vw); }
   body.ai-dock-open #readerView .reader-layout { grid-template-columns: minmax(0, 1fr); }
-  body.ai-dock-open #readerView .side-panel { display: none; }
+
   body.ai-dock-open #readerView .book-name { max-width: 100px; }
 }
 
@@ -817,3 +817,21 @@ body.ai-dock-open.pdf-reader-open #readerView .reader-status { display: inline-f
 #readerView .library-back:hover { border-color: var(--line); background: color-mix(in srgb, var(--paper) 78%, transparent); }
 .language-picker { min-width: 86px; justify-content: center; }
 .language-picker select { min-width: 72px; font-size: 11px; text-align: center; }
+
+/* Notes and appearance must remain reachable above a floating AI panel.
+   With a pinned assistant, anchor the drawer to the reading area. */
+#readerView .panel-backdrop { z-index: 59; }
+#readerView .side-panel {
+  z-index: 60;
+  visibility: hidden;
+  pointer-events: none;
+}
+#readerView .side-panel.open {
+  display: flex;
+  visibility: visible;
+  pointer-events: auto;
+}
+@media (min-width: 851px) {
+  body.ai-dock-open #readerView .side-panel { right: var(--assistant-dock-width); }
+  body.ai-dock-open #readerView .panel-backdrop { right: var(--assistant-dock-width); }
+}

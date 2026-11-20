@@ -21,6 +21,7 @@
     "showTab('notes')": () => window.showTab?.('notes'),
     "showTab('highlights')": () => window.showTab?.('highlights'),
     "showTab('settings')": () => window.showTab?.('settings'),
+    "showTab('pdfIndex')": () => window.showTab?.('pdfIndex'),
     "showTab('assistant')": () => window.showTab?.('assistant'),
     'newNote()': () => window.newNote?.(),
     'cancelNote()': () => window.cancelNote?.(),

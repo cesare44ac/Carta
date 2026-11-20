@@ -1,5 +1,37 @@
 # Registro delle modifiche
 
+## 3.5.8
+
+- Aggiunta la ricerca locale nelle note; `Invio` salva il commento e `Ctrl+Invio` inserisce una nuova riga.
+- Mostrate nel margine della lettura le note collegate a un passaggio, con un collegamento sottile verso il punto annotato.
+- Aggiunto l’indice PDF personale: salva pagine con un titolo facoltativo e riaprile o rimuovile dal pannello laterale.
+- Corretto il salto a una pagina PDF digitata: il campo non viene più sovrascritto durante la digitazione e lo scorrimento si allinea alla pagina scelta.
+- Aggiunto **Torna alla pagina** dopo i salti manuali e i collegamenti a note o pagine salvate, ripristinando anche la posizione precisa nella pagina PDF.
+
+## 3.5.7
+
+- Evidenziazioni PDF continue sulla stessa riga, anche con formule, operatori e pedici, mantenendo la precisione sulle singole parole.
+- Selezione trascinata ancorata ai caratteri più vicini: margini e interlinea non diventano più punti di selezione dell’intera pagina.
+- Conservate la selezione di più righe, il doppio clic per parola e le evidenziazioni già salvate.
+
+## 3.5.6
+
+- Corretto il pannello Note nascosto dietro l’assistente AI: annotazioni e impostazioni restano accessibili con assistente affiancato, flottante e su finestre strette.
+
+## 3.5.5
+
+- Migliorata la nitidezza dei PDF con rendering ad alta risoluzione e supporto agli schermi ad alta densità.
+- Evidenziazioni precise sulle singole parole, senza includere i riquadri dell’intera riga.
+- Colori più vivaci, mantenendo compatibili le evidenziazioni esistenti.
+- La riselezione di un passaggio permette di cambiarne il colore o rimuoverlo esplicitamente, senza cancellazioni automatiche.
+
+## 3.5.4
+
+- Aggiunto il filtro **Tema** a Scopri. I temi suggeriti vengono estratti localmente dai titoli dei libri e non vengono cercati finché l’utente non li seleziona.
+- La ricerca OpenAlex applica il tema ai titoli e agli abstract e accetta anche ricerche composte dal solo tema.
+- Applicata a GLib 0.18.5 la correzione upstream dell’iteratore `VariantStrIter`, mantenendo compatibile la dipendenza GTK richiesta da Tauri 2.
+- Limitati e ripuliti i caratteri del tema prima di usarlo nel filtro della richiesta.
+
 ## 3.5.3
 
 - Aggiunto alla libreria il pannello laterale **Scopri** per trovare paper e ricerche ad accesso aperto, filtrabili per LSE, IMF, BCE e Federal Reserve.

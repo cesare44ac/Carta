@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { runInNewContext } from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -52,3 +54,20 @@ try {
 }
 
 console.log('PDF reader check passed: bundled PDF.js loaded a two-page document and extracted selectable text.');
+
+const readerSource = await readFile(path.join(root, 'outputs/carta/document-readers.js'), 'utf8');
+const lineFunction = readerSource.slice(readerSource.indexOf('  function pdfLineRects('), readerSource.indexOf('  // Element rects describe'));
+const lineRects = runInNewContext(lineFunction + ';pdfLineRects');
+const normalized = (x, y, w, h) => ({ x: x / 1000, y: y / 1000, w: w / 1000, h: h / 1000 });
+const formulaBands = lineRects([
+  normalized(10, 10, 20, 20), normalized(45, 10, 12, 20),
+  normalized(70, 10, 80, 20), normalized(150, 24, 8, 10),
+  normalized(10, 45, 130, 20)
+], 1000, 1000);
+assert.equal(formulaBands.length, 2, 'Formula runs, spaces and subscripts must merge on their own line');
+assert.equal(formulaBands[0].w, .148, 'The band must bridge internal gaps without extending beyond the passage');
+assert.equal(lineRects([normalized(10, 10, 40, 20)], 1000, 1000)[0].w, .04,
+  'A single selected word must retain its own width');
+assert.equal(lineRects([normalized(10, 10, 40, 20), normalized(400, 10, 60, 20)], 1000, 1000).length, 2,
+  'Distant columns must remain separate');
+console.log('PDF highlight geometry passed: formulas, subscripts, separate lines, columns and individual words.');

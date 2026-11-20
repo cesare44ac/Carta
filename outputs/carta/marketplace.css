@@ -37,10 +37,15 @@
 .discover-head h2 { margin: 4px 0 0; font-size: 24px; font-weight: 600; letter-spacing: -.04em; }
 .discover-close { flex: 0 0 38px; }
 .discover-intro { max-width: 390px; margin: 10px 0 17px; color: var(--muted); font-size: 12px; line-height: 1.5; }
-.discover-search { display: flex; min-height: 44px; gap: 8px; padding: 4px 5px 4px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.discover-search { display: flex; flex-direction: column; gap: 6px; padding: 8px 9px 7px 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
 .discover-search:focus-within { border-color: color-mix(in srgb, var(--accent) 58%, var(--line)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
+.discover-search-main { display: flex; min-height: 34px; gap: 8px; }
 .discover-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 13px; }
 .discover-search-button { width: 34px; flex: 0 0 34px; border: 0; border-radius: 9px; background: var(--accent); color: white; font-size: 19px; }
+.discover-theme-row { display: flex; align-items: center; gap: 9px; min-height: 28px; border-top: 1px solid var(--line); }
+.discover-theme-row label { flex: 0 0 auto; color: var(--muted); font-size: 11px; }
+.discover-theme-row input { font-size: 11px; }
+.discover-theme-hint { margin: 0 1px; color: var(--muted); font-size: 9px; line-height: 1.4; opacity: .82; }
 .discover-source-label { margin: 18px 0 8px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .discover-source-filter { display: flex; flex-wrap: wrap; gap: 6px; }
 .discover-chip { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-size: 10px; transition: .15s ease; }

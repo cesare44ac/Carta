@@ -1,3 +1,44 @@
+# Carta 3.5.8
+
+- Ricerca nelle note e scorciatoie: **Invio** salva, **Ctrl+Invio** aggiunge una riga.
+- Note visibili a margine del testo con un sottile collegamento al passaggio annotato.
+- Indice PDF personale, con pagine salvate, titoli modificabili e accesso rapido.
+- Corretto l’inserimento del numero di pagina PDF e migliorato il posizionamento dello scorrimento.
+- Il pulsante **Torna alla pagina** ripristina il punto di lettura precedente, incluso lo scorrimento parziale della pagina PDF.
+
+# Carta 3.5.7
+
+- Evidenziazioni PDF continue sulla stessa riga, anche con formule, operatori e pedici, mantenendo la precisione sulle singole parole.
+- Selezione trascinata ancorata ai caratteri più vicini: margini e interlinea non diventano più punti di selezione dell’intera pagina.
+- Conservate la selezione di più righe, il doppio clic per parola e le evidenziazioni già salvate.
+
+# Carta 3.5.6
+
+- Corretto il pannello Note: non resta più nascosto dietro l’assistente AI, anche nelle finestre strette.
+
+# Carta 3.5.5
+
+- Migliorata la nitidezza dei PDF con rendering ad alta risoluzione e supporto agli schermi ad alta densità.
+- Evidenziazioni precise sulle singole parole, senza includere i riquadri dell’intera riga.
+- Colori più vivaci, mantenendo compatibili le evidenziazioni esistenti.
+- La riselezione di un passaggio permette di cambiarne il colore o rimuoverlo esplicitamente, senza cancellazioni automatiche.
+
+# Carta 3.5.4
+
+## Novità e correzioni
+
+- Nuovo filtro **Tema** nella ricerca di Scopri, separato dalla ricerca per argomento, autore o titolo.
+- I suggerimenti si basano sui titoli della libreria e vengono calcolati solo sul dispositivo. Carta invia il tema scelto a OpenAlex solo quando l’utente avvia o conferma la ricerca.
+- I risultati sono filtrati anche nei titoli e negli abstract; è possibile cercare usando solo un tema.
+- Corretta la vulnerabilità di soundness in `glib::VariantStrIter` con la modifica upstream `&mut` applicata al GLib 0.18.5 richiesto da Tauri 2. Il piccolo override locale è documentato e potrà essere rimosso quando la catena Linux di Tauri userà una versione corretta di GLib.
+- Il testo del tema è limitato a 120 caratteri e ripulito prima di costruire il filtro OpenAlex.
+
+## Installazione
+
+L’installer Windows x64 viene copiato in `releases/Carta_3.5.4_x64-setup.exe`.
+
+---
+
 # Carta 3.5.3
 
 ## Novità e correzioni

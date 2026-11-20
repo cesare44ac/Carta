@@ -22,6 +22,17 @@
     return element;
   }
 
+  function updateThemeSuggestions(titles) {
+    const list = byId('discoverThemeSuggestions');
+    if (!list || typeof window.cartaSuggestTopics !== 'function') return;
+    const topics = window.cartaSuggestTopics(Array.isArray(titles) ? titles : []);
+    list.replaceChildren(...topics.map(topic => {
+      const option = document.createElement('option');
+      option.value = topic;
+      return option;
+    }));
+  }
+
   function showEmpty(container, message) {
     container.replaceChildren(make('div', 'discover-empty', message));
   }
@@ -98,17 +109,18 @@
 
   async function searchResearch() {
     const query = byId('discoverQuery').value.trim();
+    const theme = byId('discoverTheme').value.trim();
     const results = byId('discoverResearchResults');
     const requestId = ++researchRequest;
-    if (!query) {
-      showEmpty(results, 'Inserisci un argomento, un autore o una parte del titolo.');
+    if (!query && !theme) {
+      showEmpty(results, 'Inserisci un argomento o scegli un tema.');
       setStatus('discoverResearchStatus', 'Ricerca pubblicazioni con una copia ad accesso aperto.');
       return;
     }
     results.replaceChildren();
     setStatus('discoverResearchStatus', 'Cerco pubblicazioni…');
     try {
-      const items = await invoke('search_open_access_research', { query, source });
+      const items = await invoke('search_open_access_research', { query, theme, source });
       renderResearch(Array.isArray(items) ? items : [], requestId);
     } catch (error) {
       if (requestId !== researchRequest) return;
@@ -166,6 +178,12 @@
     event.preventDefault();
     searchResearch();
   });
+  byId('discoverTheme').addEventListener('change', () => {
+    if (activeTab !== 'research') setTab('research');
+    searchResearch();
+  });
+  document.addEventListener('carta-library-updated', event => updateThemeSuggestions(event.detail?.titles));
+  updateThemeSuggestions([]);
   byId('discoverClose').addEventListener('click', () => setOpen(false));
   byId('discoverScrim').addEventListener('click', () => setOpen(false));
   byId('discoverResearchTab').addEventListener('click', () => setTab('research'));
@@ -177,7 +195,7 @@
       panel.querySelectorAll('[data-source]').forEach(button => button.classList.toggle('active', button === chip));
       cachedNewsSource = '';
       if (activeTab === 'news') loadNews(true);
-      else if (byId('discoverQuery').value.trim()) searchResearch();
+      else if (byId('discoverQuery').value.trim() || byId('discoverTheme').value.trim()) searchResearch();
     }
   });
   document.addEventListener('keydown', event => {

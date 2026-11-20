@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { runInNewContext } from 'node:vm';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -86,8 +87,11 @@ for (const [, template] of app.matchAll(/\.innerHTML\s*=\s*`([\s\S]*?)`/g)) {
 }
 assert.doesNotMatch(app, /card\.innerHTML/, 'Book cards must not use an HTML injection sink');
 assert.match(app, /allowScriptedContent:false,allowPopups:false/, 'EPUB scripts and popups must stay disabled');
-assert.match(app, /function safeHighlightColor\(value\)\{return highlightPalette\.some\(item=>item\.color===value\)\?value:highlightPalette\[0\]\.color\}/,
-  'Stored highlight colors must be selected from the fixed palette');
+const paletteCode = app.slice(app.indexOf('const highlightPalette='), app.indexOf("const DB_NAME="));
+for (const value of ['#ffe600', '#f1d55e', 'red;position:fixed', '__proto__', '', null]) {
+  const result = runInNewContext(paletteCode + ';safeHighlightColor(value)', { value });
+  assert.match(result, /^#[0-9a-f]{6}$/, 'Stored colors must resolve to a fixed safe color');
+}
 assert.match(html, /<script src="\.\/epub-security\.js"><\/script>/, 'EPUB archive validation must load before the reader');
 assert.match(html, /<script src="\.\/vendor\/purify\.min\.js"><\/script>/, 'Markdown rendering must load the local HTML sanitizer');
 assert.match(html, /<script src="\.\/vendor\/marked\.umd\.js"><\/script>/, 'Markdown rendering must use the local parser');

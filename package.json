@@ -1,7 +1,7 @@
 {
   "name": "carta-reader",
   "productName": "Carta",
-  "version": "3.5.3",
+  "version": "3.5.8",
   "description": "Lettore e creatore desktop EPUB, PDF e Markdown con note ed evidenziazioni",
   "author": "Carta",
   "scripts": {

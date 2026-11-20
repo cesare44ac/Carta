@@ -1,6 +1,6 @@
 [package]
 name = "carta-reader"
-version = "3.5.3"
+version = "3.5.8"
 description = "Lettore desktop EPUB, PDF e Markdown con note ed evidenziazioni"
 authors = ["Carta"]
 edition = "2021"
@@ -39,3 +39,6 @@ apple-native-keyring-store = { version = "1", features = ["keychain"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 dbus-secret-service-keyring-store = { version = "1", features = ["crypto-rust", "vendored"] }
+
+[patch.crates-io]
+glib = { path = "vendor/glib-0.18.5" }

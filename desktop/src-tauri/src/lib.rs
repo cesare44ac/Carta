@@ -404,6 +404,22 @@ fn research_source_info(source: &str) -> Result<(&'static str, &'static str), St
     }
 }
 
+fn normalize_research_theme(input: &str) -> String {
+    input
+        .chars()
+        .take(512)
+        .filter(|character| {
+            character.is_alphanumeric()
+                || character.is_whitespace()
+                || matches!(character, '-' | '\'' | '’')
+        })
+        .take(120)
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 fn openalex_abstract(value: &serde_json::Value) -> String {
     let Some(index) = value.as_object() else {
         return String::new();
@@ -433,16 +449,18 @@ fn openalex_abstract(value: &serde_json::Value) -> String {
 #[tauri::command]
 async fn search_open_access_research(
     query: String,
+    theme: String,
     source: String,
 ) -> Result<Vec<OpenAccessWork>, String> {
     let query = query.trim();
-    if query.is_empty() {
-        return Err("Inserisci un argomento, un autore o un titolo".into());
+    let theme = normalize_research_theme(&theme);
+    if query.is_empty() && theme.is_empty() {
+        return Err("Inserisci un argomento o scegli un tema".into());
     }
-    let query = shorten_text(query, 160);
+    let query = shorten_text(if query.is_empty() { &theme } else { query }, 160);
     let (institution_id, source_label) = research_source_info(source.trim())?;
     let client = reqwest::Client::builder()
-        .user_agent("Carta Reader/3.5.3 (open access research discovery)")
+        .user_agent("Carta Reader/3.5.4 (open access research discovery)")
         .timeout(Duration::from_secs(12))
         .build()
         .map_err(|error| format!("Avvio della ricerca non riuscito: {error}"))?;
@@ -451,6 +469,10 @@ async fn search_open_access_research(
     let mut filter = "open_access.is_oa:true".to_string();
     if !institution_id.is_empty() {
         filter.push_str(&format!(",authorships.institutions.id:{institution_id}"));
+    }
+    if !theme.is_empty() {
+        filter.push_str(",title_and_abstract.search:");
+        filter.push_str(&theme);
     }
     url.query_pairs_mut()
         .append_pair("search", &query)
@@ -587,7 +609,7 @@ async fn fetch_research_news(source: String) -> Result<Vec<ResearchNewsItem>, St
         .filter(|feed| source == "all" || feed.source == source)
         .collect::<Vec<_>>();
     let client = reqwest::Client::builder()
-        .user_agent("Carta Reader/3.5.3 (official research feeds)")
+        .user_agent("Carta Reader/3.5.4 (official research feeds)")
         .timeout(Duration::from_secs(12))
         .build()
         .map_err(|error| format!("Avvio delle notizie non riuscito: {error}"))?;
@@ -1010,6 +1032,16 @@ mod security_tests {
         assert_eq!(research_source_info("ecb").unwrap().0, "I153515283");
         assert_eq!(research_source_info("fed").unwrap().0, "I2802905149");
         assert!(research_source_info("https://attacker.test").is_err());
+    }
+
+    #[test]
+    fn research_theme_is_bounded_and_cannot_extend_the_api_filter() {
+        let theme = normalize_research_theme("  politica monetaria, type:journal  ");
+        assert_eq!(theme, "politica monetaria typejournal");
+        assert!(!theme.contains(',') && !theme.contains(':'));
+        assert_eq!(normalize_research_theme(&"x".repeat(140)).len(), 120);
+        assert_eq!(normalize_research_theme(&"!".repeat(10_000)), "");
+        assert_eq!(normalize_research_theme("  \n  "), "");
     }
 
     #[test]

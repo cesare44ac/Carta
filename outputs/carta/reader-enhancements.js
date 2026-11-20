@@ -126,20 +126,35 @@ window.saveNote = async function () {
   toast('Commento salvato');
 };
 
+const noteInput = $('noteInput');
+noteInput?.addEventListener('keydown', event => {
+  if (event.key !== 'Enter' || event.ctrlKey || event.metaKey || event.isComposing) return;
+  event.preventDefault();
+  window.saveNote();
+});
+
+$('notesSearch')?.addEventListener('input', () => window.renderNotes());
+
 window.renderNotes = function () {
   const list = $('notesList');
   list.replaceChildren();
-  $('notesCount').textContent = currentNotes.length
-    ? `${currentNotes.length} ${currentNotes.length === 1 ? 'nota' : 'note'}`
-    : 'Le tue note';
+  const query = ($('notesSearch')?.value || '').trim().toLocaleLowerCase();
+  const notes = currentNotes.filter(note => !query || [note.text, note.quote, note.page ? `pagina ${note.page}` : ''].join(' ').toLocaleLowerCase().includes(query));
+  $('notesCount').textContent = query
+    ? `${notes.length} di ${currentNotes.length} ${currentNotes.length === 1 ? 'nota' : 'note'}`
+    : currentNotes.length ? `${currentNotes.length} ${currentNotes.length === 1 ? 'nota' : 'note'}` : 'Le tue note';
   $('noteBadge').textContent = currentNotes.length ? ` · ${currentNotes.length}` : '';
-  if (!currentNotes.length) {
-    list.innerHTML = '<div class="notes-empty">Le tue note appariranno qui.<br>Aggiungi un commento a un passaggio o alla pagina corrente.</div>';
+  if (!notes.length) {
+    const empty = document.createElement('div');
+    empty.className = 'notes-empty';
+    empty.textContent = query ? 'Nessuna nota corrisponde alla ricerca.' : 'Le tue note appariranno qui. Aggiungi un commento a un passaggio o alla pagina corrente.';
+    list.append(empty);
     return;
   }
-  for (const note of currentNotes) {
+  for (const note of notes) {
     const card = document.createElement('article');
     card.className = 'note-card';
+    card.dataset.noteId = note.id;
     const location = document.createElement('div');
     location.className = 'note-loc';
     location.textContent = note.type === 'pdf' ? `PDF · pagina ${note.page || 1}` : note.type === 'markdown' ? `Markdown · ${Math.round((note.location || 0) * 100)}%` : `EPUB · ${Math.round((note.location || 0) * 100)}%`;
@@ -207,6 +222,8 @@ window.showSelectionMenu = function (text, rect, passage) {
 
 (() => {
   const menu = $('selectionMenu');
+  // Preserve the text selection while choosing a color or another action.
+  menu?.addEventListener('mousedown', event => event.preventDefault());
   const dictionaryButton = menu?.querySelector('.dictionary-action');
   const directions = $('dictionaryDirections');
   if (!dictionaryButton || !directions) return;
@@ -307,7 +324,9 @@ window.openEPUB = async function (file) {
   doc.rendition.on('rendered', (_section, view) => {
     window.applyEpubThemeToDocument(view?.iframe?.contentDocument);
     addEPUBScrollbarStyle(view);
+    requestAnimationFrame(() => window.documentReaders?.renderMarginNotes?.());
   });
+  doc.rendition.on('relocated', () => requestAnimationFrame(() => window.documentReaders?.renderMarginNotes?.()));
   for (const content of doc.rendition.getContents()) {
     window.applyEpubThemeToDocument(content.document);
     addEPUBScrollbarStyle({ iframe: content.document.defaultView?.frameElement });
@@ -331,7 +350,7 @@ scrubber.addEventListener('input', () => {
   jumpInput.value = String(percentage);
 });
 scrubber.addEventListener('change', () => window.seekToProgress(scrubber.value));
-$('#readerProgressControl').append(scrubber);
+$('readerProgressControl').append(scrubber);
 
 const jumpControl = document.createElement('label');
 jumpControl.className = 'reader-jump';
@@ -401,7 +420,7 @@ window.updateStats = function () {
   remaining.title = fullRemaining;
   const pace = $('paceLabel');
   pace.textContent = pace.textContent.replace(' parole/min', ' ppm').replace('Ritmo iniziale', 'Stima');
-  $('.reader-status').title = `${fullProgress} · ${fullRemaining} · ${pace.textContent}`;
+  document.querySelector('.reader-status').title = `${fullProgress} · ${fullRemaining} · ${pace.textContent}`;
 };
 
 window.seekToProgress = async function (value) {
